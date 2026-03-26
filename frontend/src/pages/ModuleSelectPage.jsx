@@ -347,23 +347,8 @@ export default function ModuleSelectPage() {
                 {bossUnlocked && (
                   <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '2px dashed var(--color-border-light)' }}>
                     <button
-                      className="btn-clay"
-                      style={{
-                        background: '#FEF3C7',
-                        color: '#92400E',
-                        border: '2px solid #D97706',
-                        borderRadius: '12px',
-                        padding: '8px 16px',
-                        fontSize: '0.85rem',
-                        fontFamily: 'var(--font-heading)',
-                        fontWeight: 700,
-                        boxShadow: '0 3px 0 #D97706',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        width: '100%',
-                        justifyContent: 'center',
-                      }}
+                      className="btn-clay btn-clay-boss"
+                      style={{ borderRadius: '12px', padding: '8px 16px', fontSize: '0.85rem', width: '100%' }}
                       onClick={(e) => {
                         e.stopPropagation()
                         navigate(`/cviceni/${mod.id}-boss/${profileId}`)

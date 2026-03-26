@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownRight, ArrowUpRight, BookOpen, Calendar, ChevronLeft, Clock, Download, Flame, ListPlus,
-  Minus, Target, TrendingUp, Zap,
+  Minus, Pencil, PauseCircle, Play, Plus, Target, Trash2, TrendingUp, Users, Zap,
 } from 'lucide-react'
 import SentenceManager from '../components/SentenceManager.jsx'
+import ProfileForm from '../components/ProfileForm.jsx'
 import {
   Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { api } from '../utils/api.js'
+import { api, BASE_API_URL } from '../utils/api.js'
 
 const WEEKDAY_LABELS = ['Po', 'Ut', 'St', 'Ct', 'Pa', 'So', 'Ne']
 const LETTER_LABELS = { B: 'B', L: 'L', M: 'M', P: 'P', S: 'S', V: 'V', Z: 'Z' }
@@ -503,6 +504,11 @@ export default function ParentDashboard() {
   const [dailyGoal, setDailyGoal] = useState(15)
   const [savingGoal, setSavingGoal] = useState(false)
 
+  const [profileFormOpen, setProfileFormOpen] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [profileNotice, setProfileNotice] = useState(null)
+
   useEffect(() => {
     if (!token) {
       navigate('/')
@@ -651,6 +657,49 @@ export default function ParentDashboard() {
     navigate('/')
   }
 
+  const reloadProfiles = async () => {
+    const data = await api.getProfiles()
+    const list = data.profiles || data || []
+    setProfiles(list)
+    const currentExists = list.some((p) => String(p.id) === selectedProfileId)
+    if (!currentExists && list.length > 0) {
+      setSelectedProfileId(String(list[0].id))
+    }
+    return list
+  }
+
+  const handleProfileFormSave = async (message) => {
+    setProfileFormOpen(false)
+    setEditingProfile(null)
+    await reloadProfiles()
+    setProfileNotice({ type: 'success', message })
+  }
+
+  const handleDeleteProfile = async (profileId) => {
+    try {
+      await api.deleteProfile(profileId, token)
+      setDeleteConfirm(null)
+      await reloadProfiles()
+      setProfileNotice({ type: 'success', message: 'Profil byl smazán.' })
+    } catch (err) {
+      setDeleteConfirm(null)
+      setProfileNotice({ type: 'error', message: err.message || 'Nepodařilo se smazat profil.' })
+    }
+  }
+
+  const handleTogglePauseProfile = async (profile) => {
+    try {
+      await api.updateProfile(profile.id, { is_paused: !profile.is_paused }, token)
+      await reloadProfiles()
+      setProfileNotice({
+        type: 'success',
+        message: profile.is_paused ? 'Profil byl znovu aktivován.' : 'Profil byl pozastaven.',
+      })
+    } catch (err) {
+      setProfileNotice({ type: 'error', message: err.message || 'Nepodařilo se změnit stav profilu.' })
+    }
+  }
+
   const handleSaveDailyGoal = async (newGoal) => {
     setSavingGoal(true)
     try {
@@ -752,7 +801,7 @@ export default function ParentDashboard() {
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
       <header style={{
         background: 'var(--color-surface)',
-        borderBottom: '3px solid #E2E8F0',
+        borderBottom: '3px solid var(--color-border-light)',
         padding: '14px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -818,7 +867,7 @@ export default function ParentDashboard() {
 
       <div style={{
         background: 'var(--color-surface)',
-        borderBottom: '2px solid #E2E8F0',
+        borderBottom: '2px solid var(--color-border-light)',
         padding: '0 24px',
         display: 'flex',
         gap: '4px',
@@ -827,6 +876,7 @@ export default function ParentDashboard() {
           { id: 'global', label: 'Přehled', icon: TrendingUp },
           { id: 'vyjmenovana', label: 'Vyjmenovaná slova', icon: BookOpen },
           { id: 'sentences', label: 'Správa vět', icon: ListPlus },
+          { id: 'profiles', label: 'Profily', icon: Users },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -859,7 +909,7 @@ export default function ParentDashboard() {
             <div style={{
               width: '40px',
               height: '40px',
-              border: '3px solid #E2E8F0',
+              border: '3px solid var(--color-border-light)',
               borderTop: '3px solid var(--color-primary)',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
@@ -1215,8 +1265,216 @@ export default function ParentDashboard() {
             )}
           </>
         )}
+        {activeView === 'profiles' && (
+          <div>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-text)', margin: '0 0 4px' }}>
+                  Správa profilů
+                </h2>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                  Uprav, vytvoř nebo odstraň profily dětí.
+                </p>
+              </div>
+              <button
+                className="btn-clay btn-clay-primary"
+                style={{ padding: '10px 20px', borderRadius: '14px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => { setEditingProfile(null); setProfileFormOpen(true) }}
+              >
+                <Plus size={16} />
+                Nový profil
+              </button>
+            </div>
+
+            {/* Notice */}
+            {profileNotice && (
+              <div style={{
+                background: profileNotice.type === 'error' ? '#FEE2E2' : '#ECFDF5',
+                border: `2px solid ${profileNotice.type === 'error' ? 'var(--color-error)' : '#16A34A'}`,
+                borderRadius: '14px',
+                padding: '12px 16px',
+                color: profileNotice.type === 'error' ? 'var(--color-error)' : '#166534',
+                fontFamily: 'var(--font-body)',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+              }}>
+                <span>{profileNotice.message}</span>
+                <button
+                  className="btn-clay btn-clay-secondary"
+                  style={{ padding: '4px 10px', borderRadius: '10px', fontSize: '0.8rem', flexShrink: 0 }}
+                  onClick={() => setProfileNotice(null)}
+                >Zavřít</button>
+              </div>
+            )}
+
+            {/* Profile cards */}
+            {profiles.length === 0 ? (
+              <div className="clay-card" style={{ padding: '48px', textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                  Zatím žádné profily.
+                </p>
+                <button
+                  className="btn-clay btn-clay-primary"
+                  style={{ padding: '10px 24px', borderRadius: '14px' }}
+                  onClick={() => { setEditingProfile(null); setProfileFormOpen(true) }}
+                >
+                  Vytvořit první profil
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {profiles.map((profile) => {
+                  const avatarUrl = profile.avatar_url ? `${BASE_API_URL}${profile.avatar_url}` : null
+                  return (
+                    <div
+                      key={profile.id}
+                      className="clay-card"
+                      style={{
+                        padding: '16px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        flexWrap: 'wrap',
+                        opacity: profile.is_paused ? 0.75 : 1,
+                      }}
+                    >
+                      {/* Avatar */}
+                      <div style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                        border: `3px solid ${profile.color || 'var(--color-primary)'}`,
+                        background: avatarUrl ? 'transparent' : (profile.avatar_preset ? `${profile.color || '#2563EB'}22` : profile.color || '#2563EB'),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: profile.avatar_preset ? '1.6rem' : '1.3rem',
+                        fontFamily: 'var(--font-heading)',
+                        fontWeight: 700,
+                        color: '#fff',
+                      }}>
+                        {avatarUrl
+                          ? <img src={avatarUrl} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : (profile.avatar_preset || (profile.name?.[0] || '?').toUpperCase())}
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: '140px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', margin: 0 }}>
+                            {profile.name}
+                          </h3>
+                          {profile.is_paused && (
+                            <span style={{
+                              background: '#FEF3C7',
+                              color: '#92400E',
+                              border: '1px solid #D97706',
+                              borderRadius: '8px',
+                              padding: '1px 8px',
+                              fontSize: '0.75rem',
+                              fontFamily: 'var(--font-body)',
+                              fontWeight: 700,
+                            }}>
+                              Pozastavený
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+                          {[
+                            profile.school_class,
+                            `Streak: ${profile.current_streak || 0} 🔥`,
+                            profile.last_active_date && `Naposledy: ${new Date(profile.last_active_date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}`,
+                          ].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          className="btn-clay btn-clay-secondary"
+                          style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                          onClick={() => { setEditingProfile(profile); setProfileFormOpen(true) }}
+                        >
+                          <Pencil size={13} />
+                          Upravit
+                        </button>
+                        <button
+                          className="btn-clay btn-clay-secondary"
+                          style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                          onClick={() => handleTogglePauseProfile(profile)}
+                        >
+                          {profile.is_paused ? <Play size={13} /> : <PauseCircle size={13} />}
+                          {profile.is_paused ? 'Obnovit' : 'Pozastavit'}
+                        </button>
+                        <button
+                          className="btn-clay btn-clay-danger"
+                          style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                          onClick={() => setDeleteConfirm(profile)}
+                        >
+                          <Trash2 size={13} />
+                          Smazat
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </main>
+
       <SessionDetailModal session={selectedSession} loading={sessionDetailLoading} onClose={() => setSelectedSession(null)} />
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
+          <div
+            className="clay-card bounce-in"
+            style={{ maxWidth: '380px', width: '90%', padding: '28px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-text)', margin: '0 0 10px' }}>
+              Smazat profil?
+            </h3>
+            <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', margin: '0 0 20px', lineHeight: 1.5 }}>
+              Opravdu chceš smazat profil <strong style={{ color: 'var(--color-text)' }}>{deleteConfirm.name}</strong>? Smažou se i všechna data a statistiky. Tuto akci nelze vrátit.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                className="btn-clay btn-clay-secondary"
+                style={{ flex: 1, padding: '10px', borderRadius: '14px' }}
+                onClick={() => setDeleteConfirm(null)}
+              >
+                Zrušit
+              </button>
+              <button
+                className="btn-clay btn-clay-danger"
+                style={{ flex: 1, padding: '10px', borderRadius: '14px' }}
+                onClick={() => handleDeleteProfile(deleteConfirm.id)}
+              >
+                Smazat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile form modal */}
+      {profileFormOpen && (
+        <ProfileForm
+          initialData={editingProfile}
+          token={token}
+          onSave={handleProfileFormSave}
+          onCancel={() => { setProfileFormOpen(false); setEditingProfile(null) }}
+        />
+      )}
     </div>
   )
 }

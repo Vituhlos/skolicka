@@ -118,7 +118,7 @@ function InfoChip({ icon: Icon, label, value, accent = '#CBD5E1', background = '
   )
 }
 
-export default function ProfileCard({ profile, onSelect, onEdit, onArchive, onTogglePause, isRecentlyActive }) {
+export default function ProfileCard({ profile, onSelect, onEdit, onArchive, onTogglePause, isRecentlyActive, streak }) {
   const color = getColorForProfile(profile)
   const lastActiveLabel = formatLastActive(profile.last_active_date)
   const [showActions, setShowActions] = useState(false)
@@ -414,6 +414,29 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, onTo
           />
         ) : null}
       </div>
+
+      {streak != null && !isPaused && (() => {
+        const today = streak.today_answers || 0
+        const goal = streak.daily_goal || profile.daily_goal || 15
+        const pct = Math.min(100, Math.round((today / goal) * 100))
+        const done = today >= goal
+        const barColor = done ? 'var(--color-success)' : 'var(--color-primary)'
+        return (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                Dnes
+              </span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.78rem', color: done ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                {today} / {goal} {done ? '✓' : ''}
+              </span>
+            </div>
+            <div className="progress-clay" style={{ height: '8px' }}>
+              <div className="progress-clay-fill" style={{ width: `${pct}%`, background: barColor }} />
+            </div>
+          </div>
+        )
+      })()}
 
       <div style={{
         display: 'inline-flex',

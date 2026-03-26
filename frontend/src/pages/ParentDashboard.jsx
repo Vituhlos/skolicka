@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowDownRight, ArrowUpRight, BookOpen, Calendar, ChevronLeft, Clock, Download, Flame, ListPlus,
-  Minus, Pencil, PauseCircle, Play, Plus, Target, Trash2, TrendingUp, Users, Zap,
+  ArrowDownRight, ArrowUpRight, BookOpen, Calendar, ChevronLeft, Clock, Download, Flame, KeyRound,
+  ListPlus, Minus, Pencil, PauseCircle, Play, Plus, Target, Trash2, TrendingUp, Users, Zap,
 } from 'lucide-react'
 import SentenceManager from '../components/SentenceManager.jsx'
 import ProfileForm from '../components/ProfileForm.jsx'
@@ -478,6 +478,129 @@ function SessionDetailModal({ session, loading, onClose }) {
   )
 }
 
+function ChangePinModal({ token, onClose }) {
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [status, setStatus] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+      setStatus({ type: 'error', message: 'PIN musí mít přesně 4 číslice.' })
+      return
+    }
+    if (newPin !== confirmPin) {
+      setStatus({ type: 'error', message: 'PINy se neshodují.' })
+      return
+    }
+    setLoading(true)
+    setStatus(null)
+    try {
+      await api.changePin(newPin, token)
+      setStatus({ type: 'success', message: 'PIN byl úspěšně změněn.' })
+      setNewPin('')
+      setConfirmPin('')
+    } catch (err) {
+      setStatus({ type: 'error', message: err.message || 'Nepodařilo se změnit PIN.' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000, padding: '24px',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="clay-card" style={{ width: '100%', maxWidth: '380px', padding: '28px 24px' }}>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.2rem', margin: '0 0 20px', color: 'var(--color-text)' }}>
+          Změnit PIN
+        </h2>
+
+        {status && (
+          <div style={{
+            padding: '10px 14px', borderRadius: '12px', marginBottom: '16px',
+            background: status.type === 'error' ? '#FEE2E2' : '#ECFDF5',
+            border: `2px solid ${status.type === 'error' ? 'var(--color-error)' : '#16A34A'}`,
+            color: status.type === 'error' ? 'var(--color-error)' : '#166534',
+            fontFamily: 'var(--font-body)', fontSize: '0.9rem',
+          }}>
+            {status.message}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+              Nový PIN
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="••••"
+              style={{
+                width: '100%', textAlign: 'center', fontSize: '1.4rem', letterSpacing: '0.3em',
+                border: '3px solid #CBD5E1', borderRadius: '16px', background: 'var(--color-surface)',
+                boxShadow: '0 3px 0 #CBD5E1', color: 'var(--color-text)', outline: 'none',
+                padding: '12px', fontFamily: 'var(--font-heading)', fontWeight: 700,
+                boxSizing: 'border-box',
+              }}
+              required
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+              Potvrdit PIN
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={confirmPin}
+              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="••••"
+              style={{
+                width: '100%', textAlign: 'center', fontSize: '1.4rem', letterSpacing: '0.3em',
+                border: '3px solid #CBD5E1', borderRadius: '16px', background: 'var(--color-surface)',
+                boxShadow: '0 3px 0 #CBD5E1', color: 'var(--color-text)', outline: 'none',
+                padding: '12px', fontFamily: 'var(--font-heading)', fontWeight: 700,
+                boxSizing: 'border-box',
+              }}
+              required
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-clay btn-clay-primary"
+              style={{ flex: 1, padding: '10px', borderRadius: '14px' }}
+            >
+              {loading ? 'Ukládám…' : 'Uložit PIN'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-clay btn-clay-secondary"
+              style={{ flex: 1, padding: '10px', borderRadius: '14px' }}
+            >
+              Zavřít
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function ParentDashboard() {
   const navigate = useNavigate()
   const token = localStorage.getItem('parent_token')
@@ -508,6 +631,8 @@ export default function ParentDashboard() {
   const [editingProfile, setEditingProfile] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [profileNotice, setProfileNotice] = useState(null)
+
+  const [changePinOpen, setChangePinOpen] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -854,6 +979,16 @@ export default function ParentDashboard() {
         >
           <Download size={16} />
           {exporting ? 'Exportuji...' : 'Export PDF'}
+        </button>
+
+        <button
+          onClick={() => setChangePinOpen(true)}
+          className="btn-clay btn-clay-secondary"
+          style={{ padding: '8px 12px', borderRadius: '14px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+          title="Změnit PIN"
+        >
+          <KeyRound size={15} />
+          PIN
         </button>
 
         <button
@@ -1474,6 +1609,11 @@ export default function ParentDashboard() {
           onSave={handleProfileFormSave}
           onCancel={() => { setProfileFormOpen(false); setEditingProfile(null) }}
         />
+      )}
+
+      {/* Change PIN modal */}
+      {changePinOpen && (
+        <ChangePinModal token={token} onClose={() => setChangePinOpen(false)} />
       )}
     </div>
   )

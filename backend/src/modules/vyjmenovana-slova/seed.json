@@ -123,5 +123,13 @@
   { "letter": "S", "word": "sýr", "template": "Koupili jsme tvrdý s___r a měkký s___r.", "correct_answer": "y", "display_word": "sýr", "difficulty": 2 },
   { "letter": "V", "word": "výlet", "template": "Plánujeme v___let do hor, z v___letu se vrátíme v neděli.", "correct_answer": "y", "display_word": "výlet/výletu", "difficulty": 2 },
   { "letter": "L", "word": "lyže", "template": "L___že jsou v garáži, na l___žích jsem jezdil celou zimu.", "correct_answer": "y", "display_word": "lyže/lyžích", "difficulty": 2 },
-  { "letter": "Z", "word": "jazyk", "template": "Jaz___k je sval v ústech, jaz___kem mluvíme i myslíme.", "correct_answer": "y", "display_word": "jazyk/jazykem", "difficulty": 3 }
+  { "letter": "Z", "word": "jazyk", "template": "Jaz___k je sval v ústech, jaz___kem mluvíme i myslíme.", "correct_answer": "y", "display_word": "jazyk/jazykem", "difficulty": 3 },
+  { "letter": "Z", "word": "jazyk", "template": "Cizí jaz___k se učíme ve škole.", "correct_answer": "y", "display_word": "jazyk", "difficulty": 1 },
+  { "letter": "Z", "word": "brzy", "template": "Brz___ budou prázdniny.", "correct_answer": "y", "display_word": "Brzy", "difficulty": 1 },
+  { "letter": "Z", "word": "nazývat", "template": "Tento strom se naz___vá bříza.", "correct_answer": "y", "display_word": "nazývá", "difficulty": 2 },
+  { "letter": "Z", "word": "jazyk", "template": "Anglický jaz___k zná celý svět.", "correct_answer": "y", "display_word": "jazyk", "difficulty": 2 },
+  { "letter": "Z", "word": "zima", "template": "V z___mě chodíme lyžovat na hory.", "correct_answer": "i", "display_word": "zimě", "difficulty": 1 },
+  { "letter": "Z", "word": "zírat", "template": "Přestaň z___rat do okna a dělej úkoly.", "correct_answer": "i", "display_word": "zírat", "difficulty": 2 },
+  { "letter": "Z", "word": "zisk", "template": "Obchodník se radoval z velkého z___sku.", "correct_answer": "i", "display_word": "zisku", "difficulty": 2 },
+  { "letter": "Z", "word": "zívat", "template": "Nez___vej u stolu, to je nezdvořilé.", "correct_answer": "i", "display_word": "nezívej", "difficulty": 2 }
 ]

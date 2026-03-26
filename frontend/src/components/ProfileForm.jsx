@@ -7,7 +7,7 @@ const AVATAR_COLORS = [
 ]
 
 const AVATAR_PRESETS = ['🦊', '🐻', '🐼', '🐯', '🦁', '🐸', '🐬', '🦄']
-const CLASS_OPTIONS = ['Předškolák', '1. třída', '2. třída', '3. třída', '4. třída', '5. třída']
+const CLASS_OPTIONS = ['Předškolák', '1. třída', '2. třída', '3. třída', '4. třída', '5. třída', '6. třída', '7. třída', '8. třída', '9. třída']
 
 export default function ProfileForm({ onSave, onCancel, initialData, token }) {
   const [name, setName] = useState(initialData?.name || '')

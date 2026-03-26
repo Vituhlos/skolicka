@@ -43,6 +43,7 @@ function StatusNotice({ notice, onClose }) {
 export default function HomePage() {
   const navigate = useNavigate()
   const [profiles, setProfiles] = useState([])
+  const [streaks, setStreaks] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState(null)
@@ -57,7 +58,14 @@ export default function HomePage() {
     try {
       setLoading(true)
       const data = await api.getProfiles()
-      setProfiles(data.profiles || data || [])
+      const list = data.profiles || data || []
+      setProfiles(list)
+      const results = await Promise.allSettled(
+        list.map((p) => api.getStreak(p.id).then((s) => [p.id, s]))
+      )
+      const map = {}
+      results.forEach((r) => { if (r.status === 'fulfilled') map[r.value[0]] = r.value[1] })
+      setStreaks(map)
     } catch {
       setError('Nepodařilo se načíst profily')
     } finally {
@@ -189,7 +197,7 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '0' }}>
       <header style={{
         background: 'var(--color-surface)',
-        borderBottom: '3px solid #E2E8F0',
+        borderBottom: '3px solid var(--color-border-light)',
         padding: '16px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -229,7 +237,7 @@ export default function HomePage() {
           style={{ padding: '8px 16px', fontSize: '0.9rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Users size={16} />
-          Rodice
+          Rodiče
         </button>
       </header>
 
@@ -282,6 +290,7 @@ export default function HomePage() {
                 onArchive={requestArchiveProfile}
                 onTogglePause={requestTogglePause}
                 isRecentlyActive={profile.id === mostRecentProfileId}
+                streak={streaks[profile.id]}
               />
             ))}
 

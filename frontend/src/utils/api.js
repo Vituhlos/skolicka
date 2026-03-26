@@ -37,6 +37,7 @@ export const api = {
   }),
 
   verifyPin: (pin) => request('/api/auth/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),
+  changePin: (newPin, token) => request('/api/auth/change-pin', { method: 'POST', body: JSON.stringify({ new_pin: newPin }), headers: { Authorization: `Bearer ${token}` } }),
 
   getModules: () => request('/api/modules'),
 

@@ -185,18 +185,39 @@ async function main() {
     try {
       const result = await pool.query(
         `SELECT
-           s.module_id,
-           COUNT(DISTINCT s.id) as session_count,
-           COUNT(a.id) as total_answers,
-           SUM(CASE WHEN a.is_correct = 1 THEN 1 ELSE 0 END) as correct_answers,
-           COALESCE(SUM(x.amount), 0) as total_xp
-         FROM sessions s
-         LEFT JOIN answers a ON a.session_id = s.id
-         LEFT JOIN xp_log x ON x.profile_id = s.profile_id AND x.module_id = s.module_id
-         WHERE s.profile_id = ?
-         GROUP BY s.module_id
+           modules.module_id,
+           COALESCE(session_stats.session_count, 0) as session_count,
+           COALESCE(answer_stats.total_answers, 0) as total_answers,
+           COALESCE(answer_stats.correct_answers, 0) as correct_answers,
+           COALESCE(xp_stats.total_xp, 0) as total_xp
+         FROM (
+           SELECT DISTINCT module_id
+           FROM sessions
+           WHERE profile_id = ?
+         ) modules
+         LEFT JOIN (
+           SELECT module_id, COUNT(*) as session_count
+           FROM sessions
+           WHERE profile_id = ?
+           GROUP BY module_id
+         ) session_stats ON session_stats.module_id = modules.module_id
+         LEFT JOIN (
+           SELECT s.module_id,
+                  COUNT(a.id) as total_answers,
+                  SUM(CASE WHEN a.is_correct = 1 THEN 1 ELSE 0 END) as correct_answers
+           FROM sessions s
+           LEFT JOIN answers a ON a.session_id = s.id
+           WHERE s.profile_id = ?
+           GROUP BY s.module_id
+         ) answer_stats ON answer_stats.module_id = modules.module_id
+         LEFT JOIN (
+           SELECT module_id, SUM(amount) as total_xp
+           FROM xp_log
+           WHERE profile_id = ?
+           GROUP BY module_id
+         ) xp_stats ON xp_stats.module_id = modules.module_id
          ORDER BY total_xp DESC`,
-        [profile_id]
+        [profile_id, profile_id, profile_id, profile_id]
       );
       res.json(result.rows);
     } catch (err) {

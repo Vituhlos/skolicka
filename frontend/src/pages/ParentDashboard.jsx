@@ -327,16 +327,24 @@ function SessionDetailModal({ session, loading, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="clay-card p-8 w-full max-w-3xl mx-4 bounce-in" style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div
+        className="clay-card p-8 w-full max-w-3xl bounce-in"
+        style={{
+          position: 'relative',
+          margin: 'auto',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
+        }}
+      >
         <button
           onClick={onClose}
           className="btn-clay btn-clay-secondary"
-          style={{ position: 'absolute', top: '16px', right: '16px', padding: '8px 10px', borderRadius: '12px' }}
+          style={{ position: 'sticky', top: 0, marginLeft: 'auto', display: 'block', padding: '8px 10px', borderRadius: '12px', zIndex: 1 }}
         >
           Zavřít
         </button>
 
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.35rem', margin: '0 0 18px', color: 'var(--color-text)' }}>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.35rem', margin: '8px 0 18px', color: 'var(--color-text)' }}>
           Detail sezení
         </h2>
 

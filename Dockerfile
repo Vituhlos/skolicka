@@ -11,7 +11,7 @@ FROM node:22-alpine AS backend-deps
 WORKDIR /app
 RUN apk add --no-cache python3 make g++
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Stage 3: Final image
 FROM node:22-alpine

@@ -1,8 +1,12 @@
-const CACHE_NAME = 'skolicka-v1'
-const STATIC_CACHE = 'skolicka-static-v1'
+const CACHE_VERSION = '2'
+const CACHE_NAME = `skolicka-v${CACHE_VERSION}`
+const STATIC_CACHE = `skolicka-static-v${CACHE_VERSION}`
 
 const PRECACHE_URLS = [
   '/',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/manifest.json',
 ]
 
 // Instalace — precache hlavní stránky

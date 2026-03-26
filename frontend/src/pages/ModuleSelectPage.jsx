@@ -19,6 +19,7 @@ export default function ModuleSelectPage() {
   const [bossStatuses, setBossStatuses] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [masteredLetter, setMasteredLetter] = useState(null) // písmeno k oslavě
   const [dark, toggleTheme] = useTheme()
 
   useEffect(() => {
@@ -70,11 +71,34 @@ export default function ModuleSelectPage() {
         }
       })
       setBossStatuses(statusMap)
+
+      // Zkontrolovat nově zvládnutá písmena
+      try {
+        const letterData = await api.getLetterProgress(profileId)
+        const celebratedKey = `mastered_${profileId}`
+        const celebrated = JSON.parse(localStorage.getItem(celebratedKey) || '[]')
+        for (const row of letterData) {
+          const mastered = row.total >= 5 && row.seen >= Math.ceil(row.total * 0.7)
+          if (mastered && !celebrated.includes(row.letter)) {
+            setMasteredLetter(row.letter)
+            break
+          }
+        }
+      } catch {}
     } catch (err) {
       setError('Nepodařilo se načíst data')
     } finally {
       setLoading(false)
     }
+  }
+
+  const dismissMastery = () => {
+    const celebratedKey = `mastered_${profileId}`
+    const celebrated = JSON.parse(localStorage.getItem(celebratedKey) || '[]')
+    if (masteredLetter && !celebrated.includes(masteredLetter)) {
+      localStorage.setItem(celebratedKey, JSON.stringify([...celebrated, masteredLetter]))
+    }
+    setMasteredLetter(null)
   }
 
   const handleModuleSelect = (moduleId) => {
@@ -106,6 +130,43 @@ export default function ModuleSelectPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+      {/* Modal zvládnutého písmene */}
+      {masteredLetter && (
+        <div className="modal-overlay" onClick={dismissMastery}>
+          <div
+            className="clay-card bounce-in"
+            style={{ maxWidth: '340px', width: '90%', padding: '32px 28px', textAlign: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '3.5rem', marginBottom: '12px' }}>🏆</div>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.6rem', color: 'var(--color-cta)', margin: '0 0 8px' }}>
+              Skvělá práce!
+            </h2>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', color: 'var(--color-text)', margin: '0 0 6px' }}>
+              Zvládl jsi všechna slova po
+            </p>
+            <div style={{
+              display: 'inline-block',
+              fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '3rem',
+              color: 'white', background: 'var(--color-cta)',
+              border: '3px solid var(--color-cta-dark)',
+              borderRadius: '20px', padding: '4px 24px',
+              boxShadow: '0 4px 0 var(--color-cta-dark)',
+              margin: '8px 0 20px',
+            }}>
+              {masteredLetter}
+            </div>
+            <button
+              onClick={dismissMastery}
+              className="btn-clay btn-clay-cta"
+              style={{ width: '100%', padding: '14px', borderRadius: '16px', fontSize: '1rem' }}
+            >
+              Hurá! 🎉
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header style={{
         background: 'var(--color-surface)',

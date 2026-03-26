@@ -7,6 +7,16 @@ import ProgressBar from '../../components/ProgressBar.jsx'
 
 const TOTAL_ITEMS = 15
 
+const VYJMENOVANA_SLOVA = {
+  B: ['být', 'bydlit', 'obyvatel', 'příbytek', 'nábytek', 'dobytek', 'bystrý', 'bylina', 'kobyla', 'zbýt', 'zbylý'],
+  L: ['lysý', 'lýko', 'lyže', 'lyn', 'lýra', 'lyrika', 'lýtko', 'plynout', 'vzlykat', 'mlýn', 'blýskat'],
+  M: ['my', 'mýt', 'mýlit', 'mýval', 'myslit', 'myš', 'mýto', 'hmyz', 'nezmýlit', 'umýt', 'zamýšlet'],
+  P: ['pykat', 'pysk', 'pýcha', 'pyl', 'pýr', 'pytel', 'netopýr', 'slepýš', 'kopyto', 'krupýř', 'spytovat'],
+  S: ['syn', 'sýr', 'syrový', 'sychravý', 'sýkora', 'sýček', 'sysel', 'sypat', 'sytý', 'nasytit', 'usychat'],
+  V: ['vy', 'výt', 'výr', 'výše', 'vydat', 'zvyk', 'žvýkat', 'výskat', 'vývoj', 'výběr', 'výklad'],
+  Z: ['jazyk', 'nazývat', 'brzy', 'různý', 'zvykat', 'zýval', 'zývat'],
+}
+
 function renderSentenceWithBlank(template) {
   if (!template) return null
   const parts = template.split('___')
@@ -68,6 +78,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
     return saved ? JSON.parse(saved) : ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
   })
   const [letterPickerVisible, setLetterPickerVisible] = useState(!boss)
+  const [letterProgress, setLetterProgress] = useState({})
   const navigate = useNavigate()
 
   // Boss mode: auto-start with all letters on mount
@@ -75,11 +86,26 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
     if (boss) startSession(['B', 'L', 'M', 'P', 'S', 'V', 'Z'])
   }, [])
 
+  // Načíst progres per písmeno pro letter picker
+  useEffect(() => {
+    if (!boss) {
+      api.getLetterProgress(profileId)
+        .then((data) => {
+          const map = {}
+          for (const row of data) map[row.letter] = row
+          setLetterProgress(map)
+        })
+        .catch(() => {})
+    }
+  }, [])
+
   const currentIndexRef = useRef(0)
   const correctCountRef = useRef(0)
   const totalXPRef = useRef(0)
   const allNewBadgesRef = useRef([])
   const wrongAnswersRef = useRef([])
+  const retriedIdsRef = useRef(new Set())
+  const itemsRef = useRef([])
   const questionStartTimeRef = useRef(Date.now())
 
   // Keep refs in sync with state
@@ -88,6 +114,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   useEffect(() => { totalXPRef.current = totalXP }, [totalXP])
   useEffect(() => { allNewBadgesRef.current = allNewBadges }, [allNewBadges])
   useEffect(() => { wrongAnswersRef.current = wrongAnswers }, [wrongAnswers])
+  useEffect(() => { itemsRef.current = items }, [items])
 
   const startSession = async (letters) => {
     try {
@@ -104,6 +131,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       setAllNewBadges([])
       setWrongAnswers([])
       setWrongStreak(0)
+      retriedIdsRef.current = new Set()
       questionStartTimeRef.current = Date.now()
     } catch (err) {
       setError('Nepodařilo se načíst cvičení. Zkus to znovu.')
@@ -147,6 +175,10 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         setShaking(true)
         setTimeout(() => setShaking(false), 600)
         setWrongStreak((n) => n + 1)
+        if (!retriedIdsRef.current.has(currentItem.id)) {
+          retriedIdsRef.current.add(currentItem.id)
+          setItems((prev) => [...prev, currentItem])
+        }
         setWrongAnswers((prev) => [...prev, {
           template: currentItem.template,
           correct_answer: result.correct_answer,
@@ -162,14 +194,14 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       // Správná: 1.2s, chybná: 2.5s
       setTimeout(() => {
         const nextIndex = currentIndexRef.current + 1
-        if (nextIndex >= items.length || nextIndex >= TOTAL_ITEMS) {
+        if (nextIndex >= itemsRef.current.length) {
           setFinishing(true)
           api.endSession('vyjmenovana-slova', sessionId, profileId)
             .catch(() => {})
             .finally(() => {
               onFinish({
                 correct: correctCountRef.current,
-                total: items.length,
+                total: itemsRef.current.length,
                 xp_earned: totalXPRef.current,
                 new_badges: allNewBadgesRef.current,
                 wrong_answers: wrongAnswersRef.current,
@@ -242,14 +274,21 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '28px' }}>
             {ALL_LETTERS.map(letter => {
               const active = selectedLetters.includes(letter)
+              const prog = letterProgress[letter]
+              const pct = prog?.total > 0 ? Math.round((prog.seen / prog.total) * 100) : 0
               return (
                 <button
                   key={letter}
                   onClick={() => toggleLetter(letter)}
                   className={active ? 'btn-clay btn-clay-cta' : 'btn-clay btn-clay-secondary'}
-                  style={{ height: '72px', fontSize: '1.8rem', borderRadius: '20px' }}
+                  style={{ height: '80px', fontSize: '1.8rem', borderRadius: '20px', flexDirection: 'column', gap: '2px', padding: '8px' }}
                 >
                   {letter}
+                  {prog && (
+                    <div style={{ width: '100%', height: '4px', background: active ? 'rgba(255,255,255,0.3)' : 'var(--color-border-light)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: active ? 'white' : 'var(--color-primary)', borderRadius: '2px', transition: 'width 400ms ease' }} />
+                    </div>
+                  )}
                 </button>
               )
             })}
@@ -554,16 +593,31 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
             background: '#EFF6FF',
             border: '2px solid #93C5FD',
             borderRadius: '14px',
-            padding: '10px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
+            padding: '12px 16px',
             boxShadow: '0 2px 0 #93C5FD',
           }}>
-            <span style={{ fontSize: '1.2rem' }}>💡</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: '#1D4ED8' }}>
-              Toto je vyjmenované slovo po <strong>{currentItem.letter.toUpperCase()}</strong>
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '1.2rem' }}>💡</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: '#1D4ED8' }}>
+                Vyjmenovaná slova po <strong>{currentItem.letter.toUpperCase()}</strong>:
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {(VYJMENOVANA_SLOVA[currentItem.letter.toUpperCase()] || []).map((slovo) => (
+                <span key={slovo} style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  background: slovo === currentItem.word ? '#DBEAFE' : 'white',
+                  border: `2px solid ${slovo === currentItem.word ? '#2563EB' : '#BFDBFE'}`,
+                  borderRadius: '8px',
+                  padding: '2px 8px',
+                  color: slovo === currentItem.word ? '#1D4ED8' : '#3B82F6',
+                }}>
+                  {slovo}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

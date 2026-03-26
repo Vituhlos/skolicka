@@ -459,6 +459,47 @@ router.post('/session/:id/end', async (req, res) => {
   }
 });
 
+// GET /api/modules/vyjmenovana-slova/letter-progress?profile_id=X
+router.get('/letter-progress', async (req, res) => {
+  const { profile_id } = req.query;
+  if (!profile_id) return res.status(400).json({ error: 'Chybí profile_id.' });
+
+  try {
+    const pool = req.app.locals.pool;
+
+    const totalResult = await pool.query(
+      `SELECT vw.letter, COUNT(vs.id) as total
+       FROM vslov_words vw
+       JOIN vslov_sentences vs ON vs.word_id = vw.id
+       GROUP BY vw.letter ORDER BY vw.letter`
+    );
+
+    const seenResult = await pool.query(
+      `SELECT vw.letter, COUNT(DISTINCT ip.item_id) as seen
+       FROM item_progress ip
+       JOIN vslov_sentences vs ON vs.id = ip.item_id
+       JOIN vslov_words vw ON vw.id = vs.word_id
+       WHERE ip.profile_id = ? AND ip.module_id = 'vyjmenovana-slova'
+       GROUP BY vw.letter`,
+      [profile_id]
+    );
+
+    const seenMap = {};
+    for (const row of seenResult.rows) seenMap[row.letter] = parseInt(row.seen, 10);
+
+    const result = totalResult.rows.map((row) => ({
+      letter: row.letter,
+      total: parseInt(row.total, 10),
+      seen: seenMap[row.letter] || 0,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error('GET letter-progress error:', err);
+    res.status(500).json({ error: 'Interní chyba serveru.' });
+  }
+});
+
 // GET /api/modules/vyjmenovana-slova/stats?profile_id=X
 router.get('/stats', async (req, res) => {
   const { profile_id } = req.query;

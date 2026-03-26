@@ -33,6 +33,7 @@ export const api = {
   getTimeline: (profileId, days = 30) => request(`/api/stats/timeline?profile_id=${profileId}&days=${days}`),
   getModuleStats: (moduleId, profileId) => request(`/api/modules/${moduleId}/stats?profile_id=${profileId}`),
   getBossStatus: (moduleId, profileId) => request(`/api/modules/${moduleId}/boss/status?profile_id=${profileId}`),
+  getLetterProgress: (profileId) => request(`/api/modules/vyjmenovana-slova/letter-progress?profile_id=${profileId}`),
 
   getBadges: (profileId) => request(`/api/badges?profile_id=${profileId}`),
   getStreak: (profileId) => request(`/api/streak?profile_id=${profileId}`),

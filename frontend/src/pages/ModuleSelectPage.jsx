@@ -115,7 +115,7 @@ export default function ModuleSelectPage() {
           <div style={{
             width: '48px',
             height: '48px',
-            border: '4px solid #E2E8F0',
+            border: '4px solid var(--color-border-light)',
             borderTop: '4px solid var(--color-primary)',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
@@ -170,7 +170,7 @@ export default function ModuleSelectPage() {
       {/* Header */}
       <header style={{
         background: 'var(--color-surface)',
-        borderBottom: '3px solid #E2E8F0',
+        borderBottom: '3px solid var(--color-border-light)',
         padding: '14px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -238,7 +238,7 @@ export default function ModuleSelectPage() {
             <div style={{
               width: '36px',
               height: '36px',
-              background: '#EFF6FF',
+              background: 'rgba(37, 99, 235, 0.12)',
               border: '2px solid var(--color-primary)',
               borderRadius: '10px',
               display: 'flex',
@@ -260,7 +260,7 @@ export default function ModuleSelectPage() {
           />
           {todayAnswers >= dailyGoal && (
             <p style={{ color: 'var(--color-success)', fontFamily: 'var(--font-heading)', fontWeight: 700, marginTop: '8px', fontSize: '0.95rem' }}>
-              Skvele! Splnil jsi denní cíl!
+              Skvělě! Splnil jsi denní cíl!
             </p>
           )}
         </div>
@@ -290,7 +290,7 @@ export default function ModuleSelectPage() {
             return (
               <div
                 key={mod.id}
-                className="clay-card"
+                className="clay-card hoverable"
                 style={{
                   padding: '24px',
                   borderColor: mod.color,
@@ -345,7 +345,7 @@ export default function ModuleSelectPage() {
                 </div>
 
                 {bossUnlocked && (
-                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '2px dashed #E2E8F0' }}>
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '2px dashed var(--color-border-light)' }}>
                     <button
                       className="btn-clay"
                       style={{

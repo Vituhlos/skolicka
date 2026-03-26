@@ -79,16 +79,6 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const allNewBadgesRef = useRef([])
   const questionStartTimeRef = useRef(Date.now())
 
-  // Keyboard support (y / i keys)
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'y' || e.key === 'Y') handleAnswer('y')
-      if (e.key === 'i' || e.key === 'I') handleAnswer('i')
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [handleAnswer])
-
   // Keep refs in sync with state
   useEffect(() => { currentIndexRef.current = currentIndex }, [currentIndex])
   useEffect(() => { correctCountRef.current = correctCount }, [correctCount])
@@ -183,6 +173,16 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       setError('Chyba při odesílání odpovědi')
     }
   }, [answered, finishing, items, currentIndex, sessionId, profileId, soundOn])
+
+  // Keyboard support (y / i keys) — musí být AŽ PO handleAnswer
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'y' || e.key === 'Y') handleAnswer('y')
+      if (e.key === 'i' || e.key === 'I') handleAnswer('i')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [handleAnswer])
 
   const handleSoundToggle = () => {
     const enabled = toggleSound()

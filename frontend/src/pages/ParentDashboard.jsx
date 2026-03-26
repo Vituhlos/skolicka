@@ -73,6 +73,10 @@ export default function ParentDashboard() {
   const [vslovStats, setVslovStats] = useState(null)
   const [vslovTimeline, setVslovTimeline] = useState([])
 
+  // Daily goal
+  const [dailyGoal, setDailyGoal] = useState(15)
+  const [savingGoal, setSavingGoal] = useState(false)
+
   useEffect(() => {
     if (!token) {
       navigate('/')
@@ -84,6 +88,8 @@ export default function ParentDashboard() {
   useEffect(() => {
     if (selectedProfileId) {
       loadStats()
+      const p = profiles.find(p => String(p.id) === selectedProfileId)
+      setDailyGoal(p?.daily_goal || 15)
     }
   }, [selectedProfileId])
 
@@ -182,6 +188,18 @@ export default function ParentDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('parent_token')
     navigate('/')
+  }
+
+  const handleSaveDailyGoal = async (newGoal) => {
+    setSavingGoal(true)
+    try {
+      await api.updateProfile(selectedProfileId, { daily_goal: newGoal }, token)
+      setProfiles(ps => ps.map(p => String(p.id) === selectedProfileId ? { ...p, daily_goal: newGoal } : p))
+    } catch (e) {
+      setError('Nepodařilo se uložit denní cíl.')
+    } finally {
+      setSavingGoal(false)
+    }
   }
 
   // Letter accuracy data for vyjmenovana slova
@@ -343,6 +361,30 @@ export default function ParentDashboard() {
               <StatCard label="Aktuální streak" value={`${stats?.current_streak || 0} dní`} icon={Flame} color="#EF4444" colorBg="#FEF2F2" />
               <StatCard label="Dny cvičení" value={stats?.practice_days || stats?.total_days || 0} icon={Calendar} color="#7C3AED" colorBg="#F5F3FF" />
               <StatCard label="Celkem odpovědí" value={stats?.total_answers || 0} icon={Target} color="#2563EB" colorBg="#EFF6FF" />
+            </div>
+
+            {/* Daily goal setting */}
+            <div className="clay-card" style={{ padding: '20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)', margin: '0 0 2px' }}>Denní cíl odpovědí</p>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>Kolik odpovědí má dítě splnit každý den</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => { const v = Math.max(1, dailyGoal - 5); setDailyGoal(v); handleSaveDailyGoal(v) }}
+                  className="btn-clay btn-clay-secondary"
+                  style={{ width: '36px', height: '36px', borderRadius: '10px', padding: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >−</button>
+                <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.4rem', color: 'var(--color-primary)', minWidth: '40px', textAlign: 'center' }}>
+                  {dailyGoal}
+                </span>
+                <button
+                  onClick={() => { const v = Math.min(200, dailyGoal + 5); setDailyGoal(v); handleSaveDailyGoal(v) }}
+                  className="btn-clay btn-clay-secondary"
+                  style={{ width: '36px', height: '36px', borderRadius: '10px', padding: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >+</button>
+                {savingGoal && <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Ukládám…</span>}
+              </div>
             </div>
 
             {/* XP timeline chart */}

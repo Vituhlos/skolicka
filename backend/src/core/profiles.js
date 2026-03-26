@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
     const pool = req.app.locals.pool;
 
     const result = await pool.query(
-      `SELECT p.id, p.name, p.avatar_url, p.color, p.created_at,
+      `SELECT p.id, p.name, p.avatar_url, p.color, p.created_at, p.daily_goal,
               COALESCE(SUM(x.amount), 0) as total_xp
        FROM child_profiles p
        LEFT JOIN xp_log x ON x.profile_id = p.id
@@ -91,7 +91,7 @@ router.post('/', requirePin, async (req, res) => {
 router.put('/:id', requirePin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, color } = req.body;
+    const { name, color, daily_goal } = req.body;
     const pool = req.app.locals.pool;
 
     const existing = await pool.query(
@@ -114,6 +114,12 @@ router.put('/:id', requirePin, async (req, res) => {
     if (color !== undefined) {
       setClauses.push('color = ?');
       values.push(color);
+    }
+    if (daily_goal !== undefined) {
+      const goal = parseInt(daily_goal, 10);
+      if (isNaN(goal) || goal < 1 || goal > 200) return res.status(400).json({ error: 'Denní cíl musí být 1–200.' });
+      setClauses.push('daily_goal = ?');
+      values.push(goal);
     }
 
     if (setClauses.length === 0) {

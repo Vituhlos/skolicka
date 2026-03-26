@@ -93,7 +93,12 @@ router.get('/', async (req, res) => {
     );
     const today_answers = parseInt(todayAnswers.rows[0].count, 10);
 
-    res.json({ current_streak, last_active_date, today_answers });
+    const profileResult = await pool.query(
+      `SELECT daily_goal FROM child_profiles WHERE id = ?`, [profile_id]
+    );
+    const daily_goal = profileResult.rows[0]?.daily_goal ?? 15;
+
+    res.json({ current_streak, last_active_date, today_answers, daily_goal });
   } catch (err) {
     console.error('streak error:', err);
     res.status(500).json({ error: 'Interní chyba serveru.' });

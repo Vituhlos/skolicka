@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { openDb, createPool } from './db/db.js';
 import { migrate } from './db/migrations/001_init.js';
 import { migrate002 } from './db/migrations/002_vslov_sentences_unique.js';
+import { migrate003 } from './db/migrations/003_daily_goal.js';
 import { runSeed } from './db/seed.js';
 import profilesRouter from './core/profiles.js';
 import authRouter from './core/auth.js';
@@ -42,6 +43,7 @@ async function main() {
   console.log('Spouštím migrace...');
   migrate(db);
   migrate002(db);
+  migrate003(db);
   console.log('Migrace dokončeny.');
 
   // 3. Create Express app

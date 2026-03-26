@@ -4,7 +4,7 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
-RUN npm run build
+RUN VITE_API_URL="" npm run build
 
 # Stage 2: Install backend dependencies (compile native better-sqlite3)
 FROM node:22-alpine AS backend-deps

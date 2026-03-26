@@ -7,6 +7,12 @@ import ProgressBar from '../../components/ProgressBar.jsx'
 
 const TOTAL_ITEMS = 15
 
+function makeWrongVariant(displayWord, correctAnswer) {
+  if (!displayWord) return displayWord
+  if (correctAnswer === 'y') return displayWord.replace('ý', 'í').replace('y', 'i')
+  return displayWord.replace('í', 'ý').replace('i', 'y')
+}
+
 const VYJMENOVANA_SLOVA = {
   B: ['být', 'bydlit', 'obyvatel', 'příbytek', 'nábytek', 'dobytek', 'bystrý', 'bylina', 'kobyla', 'zbýt', 'zbylý'],
   L: ['lysý', 'lýko', 'lyže', 'lyn', 'lýra', 'lyrika', 'lýtko', 'plynout', 'vzlykat', 'mlýn', 'blýskat'],
@@ -79,6 +85,8 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   })
   const [letterPickerVisible, setLetterPickerVisible] = useState(!boss)
   const [letterProgress, setLetterProgress] = useState({})
+  const [questionTypes, setQuestionTypes] = useState([])
+  const [correctOnLeft, setCorrectOnLeft] = useState(true)
   const navigate = useNavigate()
 
   // Boss mode: auto-start with all letters on mount
@@ -108,6 +116,9 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const itemsRef = useRef([])
   const questionStartTimeRef = useRef(Date.now())
 
+  // Randomizovat pozici správné odpovědi při každé nové otázce
+  useEffect(() => { setCorrectOnLeft(Math.random() < 0.5) }, [currentIndex])
+
   // Keep refs in sync with state
   useEffect(() => { currentIndexRef.current = currentIndex }, [currentIndex])
   useEffect(() => { correctCountRef.current = correctCount }, [correctCount])
@@ -123,7 +134,9 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       setLetterPickerVisible(false)
       const data = await api.startSession('vyjmenovana-slova', profileId, letters)
       setSessionId(data.session_id)
-      setItems(data.items || [])
+      const newItems = data.items || []
+      setItems(newItems)
+      setQuestionTypes(newItems.map(() => Math.random() < 0.5 ? 'word-choice' : 'fill-in'))
       setCurrentIndex(0)
       setAnswered(null)
       setTotalXP(0)
@@ -622,24 +635,40 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         )}
 
         {/* Answer buttons */}
-        {!answered && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%', maxWidth: '400px' }}>
-            <button
-              className="btn-answer-i"
-              onClick={() => handleAnswer('i')}
-              disabled={!!answered || finishing}
-            >
-              i
-            </button>
-            <button
-              className="btn-answer-y"
-              onClick={() => handleAnswer('y')}
-              disabled={!!answered || finishing}
-            >
-              y
-            </button>
-          </div>
-        )}
+        {!answered && (() => {
+          const qType = questionTypes[currentIndex] || 'fill-in'
+          if (qType === 'word-choice' && currentItem.display_word) {
+            const wrongVariant = makeWrongVariant(currentItem.display_word, currentItem.correct_answer)
+            const wrongAnswer = currentItem.correct_answer === 'y' ? 'i' : 'y'
+            const left = correctOnLeft
+              ? { word: currentItem.display_word, answer: currentItem.correct_answer }
+              : { word: wrongVariant, answer: wrongAnswer }
+            const right = correctOnLeft
+              ? { word: wrongVariant, answer: wrongAnswer }
+              : { word: currentItem.display_word, answer: currentItem.correct_answer }
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%', maxWidth: '400px' }}>
+                {[left, right].map((opt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleAnswer(opt.answer)}
+                    disabled={!!answered || finishing}
+                    className={idx === 0 ? 'btn-answer-i' : 'btn-answer-y'}
+                    style={{ fontSize: '1.3rem', minHeight: '80px', borderRadius: '20px' }}
+                  >
+                    {opt.word}
+                  </button>
+                ))}
+              </div>
+            )
+          }
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%', maxWidth: '400px' }}>
+              <button className="btn-answer-i" onClick={() => handleAnswer('i')} disabled={!!answered || finishing}>i</button>
+              <button className="btn-answer-y" onClick={() => handleAnswer('y')} disabled={!!answered || finishing}>y</button>
+            </div>
+          )
+        })()}
 
         {/* New badge notification */}
         {answered && answered.new_badges && answered.new_badges.length > 0 && (

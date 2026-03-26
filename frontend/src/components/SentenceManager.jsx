@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Upload } from 'lucide-react'
 import { api } from '../utils/api.js'
 
 const LETTERS = ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
@@ -68,6 +68,9 @@ export default function SentenceManager({ token }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
 
   const candidates = useMemo(() => findCandidates(sentence, letter), [sentence, letter])
 
@@ -114,6 +117,29 @@ export default function SentenceManager({ token }) {
       setError(e.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleImport() {
+    setImportResult(null)
+    let parsed
+    try {
+      parsed = JSON.parse(importText)
+      if (!Array.isArray(parsed)) throw new Error()
+    } catch {
+      setImportResult({ error: 'Neplatný JSON. Musí to být pole [ ... ].' })
+      return
+    }
+    setImporting(true)
+    try {
+      const result = await api.adminBulkImport(parsed, token)
+      setImportResult(result)
+      setImportText('')
+      await loadSentences()
+    } catch (e) {
+      setImportResult({ error: e.message })
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -244,6 +270,58 @@ export default function SentenceManager({ token }) {
             {submitting ? 'Přidávám...' : 'Přidat větu'}
           </button>
         </form>
+      </div>
+
+      {/* Bulk import */}
+      <div className="clay-card" style={{ padding: '24px', marginBottom: '24px' }}>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', marginTop: 0, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Upload size={18} color="var(--color-primary)" />
+          Hromadný import z ChatGPT
+        </h2>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: '12px' }}>
+          Požádej ChatGPT o JSON v tomto formátu a vlož ho sem:
+        </p>
+        <pre style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 14px', fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--color-text)', overflowX: 'auto', marginTop: 0, marginBottom: '12px' }}>{`[
+  { "letter": "B", "word": "být", "sentence": "Dnes jsem byl nemocný." },
+  { "letter": "B", "word": "bílý", "sentence": "Sníh je bílý." }
+]`}</pre>
+        <textarea
+          value={importText}
+          onChange={e => { setImportText(e.target.value); setImportResult(null) }}
+          placeholder="Vlož JSON sem..."
+          rows={6}
+          style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '0.85rem', resize: 'vertical', marginBottom: '12px' }}
+        />
+        {importResult && (
+          <div style={{
+            padding: '10px 14px', borderRadius: '10px', marginBottom: '12px',
+            fontFamily: 'var(--font-body)', fontSize: '0.9rem',
+            background: importResult.error ? '#FEE2E2' : '#F0FDF4',
+            color: importResult.error ? '#DC2626' : '#166534',
+            border: `2px solid ${importResult.error ? '#DC2626' : '#16A34A'}`,
+          }}>
+            {importResult.error ? importResult.error : (
+              <>
+                Přidáno: <strong>{importResult.added}</strong> vět
+                {importResult.skipped > 0 && `, přeskočeno (duplicity): ${importResult.skipped}`}
+                {importResult.errors?.length > 0 && (
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '16px' }}>
+                    {importResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+        )}
+        <button
+          onClick={handleImport}
+          disabled={importing || !importText.trim()}
+          className="btn-clay btn-clay-primary"
+          style={{ padding: '10px 20px', borderRadius: '14px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: !importText.trim() ? 0.5 : 1 }}
+        >
+          <Upload size={16} />
+          {importing ? 'Importuji...' : 'Importovat'}
+        </button>
       </div>
 
       {/* List */}

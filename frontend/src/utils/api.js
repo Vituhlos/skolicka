@@ -43,6 +43,7 @@ export const api = {
 
   adminGetSentences: (token) => request('/api/modules/vyjmenovana-slova/admin/sentences', { headers: { Authorization: `Bearer ${token}` } }),
   adminAddSentence: (data, token) => request('/api/modules/vyjmenovana-slova/admin/sentences', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+  adminBulkImport: (sentences, token) => request('/api/modules/vyjmenovana-slova/admin/sentences/bulk', { method: 'POST', body: JSON.stringify({ sentences }), headers: { Authorization: `Bearer ${token}` } }),
   adminDeleteSentence: (id, token) => request(`/api/modules/vyjmenovana-slova/admin/sentences/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 }
 

@@ -12,28 +12,42 @@ import {
 
 const router = express.Router();
 
-// Detects y/i position in displayWord after the given consonant letter,
-// returns { correct_answer, template } or null if not found.
-function detectAnswerAndTemplate(sentence, displayWord, letter) {
-  const lower = displayWord.toLowerCase();
+// Detects y/i position after the given consonant letter.
+// If displayWord is provided, uses it directly.
+// If autoFind=true, scans all words in the sentence to find the first match.
+// Returns { correct_answer, template, display_word } or null.
+function detectAnswerAndTemplate(sentence, displayWord, letter, autoFind = false) {
   const letterLower = letter.toLowerCase();
-  for (let i = 0; i < lower.length; i++) {
-    if (lower[i] === letterLower) {
-      for (let j = i + 1; j < lower.length; j++) {
-        const ch = lower[j];
-        if ('yý'.includes(ch)) {
-          const modified = displayWord.slice(0, j) + '___' + displayWord.slice(j + 1);
-          const template = sentence.replace(displayWord, modified);
-          return { correct_answer: 'y', template };
+
+  function tryWord(word) {
+    const lower = word.toLowerCase();
+    for (let i = 0; i < lower.length; i++) {
+      if (lower[i] === letterLower) {
+        for (let j = i + 1; j < lower.length; j++) {
+          const ch = lower[j];
+          if ('yý'.includes(ch) || 'ií'.includes(ch)) {
+            const correct_answer = 'yý'.includes(ch) ? 'y' : 'i';
+            const modified = word.slice(0, j) + '___' + word.slice(j + 1);
+            const template = sentence.replace(word, modified);
+            return { correct_answer, template, display_word: word };
+          }
         }
-        if ('ií'.includes(ch)) {
-          const modified = displayWord.slice(0, j) + '___' + displayWord.slice(j + 1);
-          const template = sentence.replace(displayWord, modified);
-          return { correct_answer: 'i', template };
-        }
+        break;
       }
     }
+    return null;
   }
+
+  if (displayWord) return tryWord(displayWord);
+
+  if (autoFind) {
+    const words = sentence.match(/[a-záčďéěíňóřšťúůýž]+/gi) || [];
+    for (const word of words) {
+      const result = tryWord(word);
+      if (result) return result;
+    }
+  }
+
   return null;
 }
 
@@ -82,6 +96,44 @@ router.post('/admin/sentences', requirePin, async (req, res) => {
     console.error('POST admin/sentences error:', err);
     res.status(500).json({ error: 'Interní chyba serveru.' });
   }
+});
+
+// POST /api/modules/vyjmenovana-slova/admin/sentences/bulk
+router.post('/admin/sentences/bulk', requirePin, async (req, res) => {
+  const { sentences } = req.body;
+  if (!Array.isArray(sentences) || sentences.length === 0) {
+    return res.status(400).json({ error: 'Chybí pole sentences.' });
+  }
+  const pool = req.app.locals.pool;
+  const results = { added: 0, skipped: 0, errors: [] };
+
+  for (const item of sentences) {
+    const { letter, word, sentence } = item;
+    if (!letter || !word || !sentence) {
+      results.errors.push(`Chybí pole: ${JSON.stringify(item)}`);
+      continue;
+    }
+    const detected = detectAnswerAndTemplate(sentence, null, letter, true);
+    if (!detected) {
+      results.errors.push(`Nelze detekovat y/i pro: "${sentence}" (${letter})`);
+      continue;
+    }
+    try {
+      await pool.query(`INSERT OR IGNORE INTO vslov_words (letter, word) VALUES (?, ?)`, [letter.toUpperCase(), word]);
+      const wordResult = await pool.query(`SELECT id FROM vslov_words WHERE letter = ? AND word = ?`, [letter.toUpperCase(), word]);
+      const wordId = wordResult.rows[0].id;
+      const result = await pool.query(
+        `INSERT OR IGNORE INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty) VALUES (?, ?, ?, ?, 1)`,
+        [wordId, detected.template, detected.correct_answer, detected.display_word]
+      );
+      if (result.rowCount > 0) results.added++;
+      else results.skipped++;
+    } catch {
+      results.errors.push(`Chyba při ukládání: "${sentence}"`);
+    }
+  }
+
+  res.json(results);
 });
 
 // DELETE /api/modules/vyjmenovana-slova/admin/sentences/:id

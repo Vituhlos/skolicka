@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Star, Trophy, Zap, RotateCcw, Home, Check } from 'lucide-react'
 
@@ -27,6 +27,66 @@ function getMotivationalMessage(accuracy) {
   if (accuracy >= 60) return { text: 'Dobrá práce! Cvič dál!', color: '#D97706' }
   if (accuracy >= 40) return { text: 'Nevzdávej se, zlepšíš se!', color: '#D97706' }
   return { text: 'Příště to půjde lépe!', color: 'var(--color-text-muted)' }
+}
+
+function Confetti() {
+  const canvasRef = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    const W = window.innerWidth
+    const H = window.innerHeight
+    canvas.width = W
+    canvas.height = H
+
+    const colors = ['#F97316', '#2563EB', '#7C3AED', '#16A34A', '#EF4444', '#F59E0B', '#0891B2', '#EC4899']
+    const pieces = Array.from({ length: 160 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * -H * 0.5,
+      w: Math.random() * 10 + 6,
+      h: Math.random() * 6 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      speed: Math.random() * 3 + 2,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.15,
+      drift: (Math.random() - 0.5) * 1.2,
+    }))
+
+    const startTime = Date.now()
+    let animId
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H)
+      const elapsed = (Date.now() - startTime) / 1000
+      const alpha = elapsed < 2.5 ? 1 : Math.max(0, 1 - (elapsed - 2.5) / 1.2)
+
+      pieces.forEach((p) => {
+        p.y += p.speed
+        p.x += p.drift
+        p.angle += p.spin
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.angle)
+        ctx.fillStyle = p.color
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
+        ctx.restore()
+      })
+
+      if (alpha > 0) animId = requestAnimationFrame(draw)
+    }
+
+    draw()
+    return () => cancelAnimationFrame(animId)
+  }, [])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
+    />
+  )
 }
 
 function BadgeAward({ badge }) {
@@ -72,6 +132,7 @@ export default function ResultsPage() {
     total = 15,
     xp_earned = 0,
     new_badges = [],
+    wrong_answers = [],
     session_id,
   } = results
 
@@ -88,6 +149,7 @@ export default function ResultsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '24px' }}>
+      {accuracy === 100 && <Confetti />}
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
         {/* Motivational message */}
         <div style={{ textAlign: 'center', marginBottom: '24px', marginTop: '16px' }}>
@@ -219,6 +281,62 @@ export default function ResultsPage() {
               {new_badges.map((badge, idx) => (
                 <BadgeAward key={idx} badge={badge} />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Wrong answers review */}
+        {wrong_answers.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{
+              fontFamily: 'var(--font-heading)',
+              fontWeight: 700,
+              fontSize: '1rem',
+              color: 'var(--color-text)',
+              marginBottom: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: '22px', height: '22px',
+                background: 'var(--color-error)', borderRadius: '50%',
+                fontSize: '0.75rem', color: 'white', fontWeight: 700, flexShrink: 0,
+              }}>{wrong_answers.length}</span>
+              Chyby k procvičení
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {wrong_answers.map((w, idx) => {
+                const parts = (w.template || '').split('___')
+                return (
+                  <div key={idx} style={{
+                    background: '#FEF2F2',
+                    border: '2px solid #FECACA',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}>
+                    <div style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                      {parts.length === 2
+                        ? <>{parts[0]}<strong style={{ color: 'var(--color-success)' }}>{w.correct_answer}</strong>{parts[1]}</>
+                        : w.template}
+                    </div>
+                    {w.display_word && (
+                      <span style={{
+                        fontFamily: 'var(--font-heading)', fontWeight: 700,
+                        fontSize: '0.85rem', color: 'var(--color-success)',
+                        background: '#DCFCE7', border: '2px solid var(--color-success)',
+                        borderRadius: '8px', padding: '2px 8px', flexShrink: 0,
+                      }}>
+                        {w.display_word}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

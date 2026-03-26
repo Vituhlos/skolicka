@@ -61,6 +61,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const [shaking, setShaking] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [allNewBadges, setAllNewBadges] = useState([])
+  const [wrongAnswers, setWrongAnswers] = useState([])
   const [selectedLetters, setSelectedLetters] = useState(() => {
     const saved = localStorage.getItem(`vslov_letters_${profileId}`)
     return saved ? JSON.parse(saved) : ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
@@ -77,6 +78,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const correctCountRef = useRef(0)
   const totalXPRef = useRef(0)
   const allNewBadgesRef = useRef([])
+  const wrongAnswersRef = useRef([])
   const questionStartTimeRef = useRef(Date.now())
 
   // Keep refs in sync with state
@@ -84,6 +86,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   useEffect(() => { correctCountRef.current = correctCount }, [correctCount])
   useEffect(() => { totalXPRef.current = totalXP }, [totalXP])
   useEffect(() => { allNewBadgesRef.current = allNewBadges }, [allNewBadges])
+  useEffect(() => { wrongAnswersRef.current = wrongAnswers }, [wrongAnswers])
 
   const startSession = async (letters) => {
     try {
@@ -98,6 +101,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       setTotalXP(0)
       setCorrectCount(0)
       setAllNewBadges([])
+      setWrongAnswers([])
       questionStartTimeRef.current = Date.now()
     } catch (err) {
       setError('Nepodařilo se načíst cvičení. Zkus to znovu.')
@@ -140,6 +144,11 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         if (soundOn) playWrong()
         setShaking(true)
         setTimeout(() => setShaking(false), 600)
+        setWrongAnswers((prev) => [...prev, {
+          template: currentItem.template,
+          correct_answer: result.correct_answer,
+          display_word: result.display_word,
+        }])
       }
 
       setTotalXP((xp) => xp + xpEarned)
@@ -160,6 +169,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
                 total: items.length,
                 xp_earned: totalXPRef.current,
                 new_badges: allNewBadgesRef.current,
+                wrong_answers: wrongAnswersRef.current,
                 session_id: sessionId,
               })
             })
@@ -172,7 +182,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
     } catch (err) {
       setError('Chyba při odesílání odpovědi')
     }
-  }, [answered, finishing, items, currentIndex, sessionId, profileId, soundOn])
+  }, [answered, finishing, items, currentIndex, sessionId, profileId, soundOn, wrongAnswers])
 
   // Keyboard support (y / i keys) — musí být AŽ PO handleAnswer
   useEffect(() => {

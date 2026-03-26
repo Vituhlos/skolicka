@@ -113,7 +113,7 @@ export default function BadgesPage() {
     try {
       setLoading(true)
       const data = await api.getBadges(profileId)
-      setBadges(data.badges || data || [])
+      setBadges(data.earned || [])
     } catch (err) {
       setError('Nepodařilo se načíst odznaky')
     } finally {
@@ -209,7 +209,7 @@ export default function BadgesPage() {
                   Globální odznaky
                 </h2>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  ({badges.filter(b => GLOBAL_BADGE_DEFS.some(d => d.id === b.badge_id)).length}/{GLOBAL_BADGE_DEFS.length})
+                  ({badges.filter(b => GLOBAL_BADGE_DEFS.some(d => d.id === b.key)).length}/{GLOBAL_BADGE_DEFS.length})
                 </span>
               </div>
               <BadgeGrid badges={badges} definitions={GLOBAL_BADGE_DEFS} />
@@ -231,7 +231,7 @@ export default function BadgesPage() {
                   Vyjmenovaná slova
                 </h2>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                  ({badges.filter(b => VSLOV_BADGE_DEFS.some(d => d.id === b.badge_id)).length}/{VSLOV_BADGE_DEFS.length})
+                  ({badges.filter(b => VSLOV_BADGE_DEFS.some(d => d.id === b.key)).length}/{VSLOV_BADGE_DEFS.length})
                 </span>
               </div>
               <BadgeGrid badges={badges} definitions={VSLOV_BADGE_DEFS} />

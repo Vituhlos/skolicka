@@ -16,7 +16,7 @@ export default function BadgeGrid({ badges = [], definitions = [] }) {
   return (
     <div className="badge-grid">
       {definitions.map((def) => {
-        const earned = badges.find((b) => b.badge_id === def.id)
+        const earned = badges.find((b) => b.key === def.id)
         return (
           <div
             key={def.id}

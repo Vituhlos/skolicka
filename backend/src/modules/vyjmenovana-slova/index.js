@@ -10,12 +10,6 @@ async function loadRoutes() {
 }
 
 async function seed(pool) {
-  const check = await pool.query('SELECT COUNT(*) as count FROM vslov_sentences');
-  if (parseInt(check.rows[0].count, 10) > 0) {
-    console.log('Seed vyjmenovana-slova: data již existují, přeskakuji.');
-    return;
-  }
-
   const seedPath = path.join(__dirname, 'seed.json');
   const seedData = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
 
@@ -33,8 +27,8 @@ async function seed(pool) {
     });
   }
 
+  let added = 0;
   for (const { letter, word, sentences } of Object.values(wordMap)) {
-    // Insert word (ignore if already exists)
     await pool.query(
       `INSERT OR IGNORE INTO vslov_words (letter, word) VALUES (?, ?)`,
       [letter, word]
@@ -47,15 +41,20 @@ async function seed(pool) {
     const wordId = wordResult.rows[0].id;
 
     for (const s of sentences) {
-      await pool.query(
-        `INSERT INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty)
+      const result = await pool.query(
+        `INSERT OR IGNORE INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty)
          VALUES (?, ?, ?, ?, ?)`,
         [wordId, s.template, s.correct_answer, s.display_word, s.difficulty]
       );
+      if (result.rowCount > 0) added++;
     }
   }
 
-  console.log('Seed vyjmenovana-slova: data vložena.');
+  if (added > 0) {
+    console.log(`Seed vyjmenovana-slova: přidáno ${added} nových vět.`);
+  } else {
+    console.log('Seed vyjmenovana-slova: žádné nové věty.');
+  }
 }
 
 export default {

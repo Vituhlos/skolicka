@@ -23,6 +23,9 @@ COPY --from=frontend-build /app/dist ./public
 
 RUN mkdir -p /data uploads/avatars
 
+LABEL org.opencontainers.image.source="https://github.com/Vituhlos/skolicka"
+LABEL org.opencontainers.image.description="Školička — vzdělávací platforma pro děti"
+
 EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production

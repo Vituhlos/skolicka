@@ -227,6 +227,45 @@ async function main() {
     }
   });
 
+  // GET /api/sessions/recent?profile_id=X&limit=10
+  app.get('/api/sessions/recent', async (req, res) => {
+    const { profile_id, module_id } = req.query;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 200);
+    if (!profile_id) return res.status(400).json({ error: 'Chybí profile_id.' });
+    try {
+      const filters = ['s.profile_id = ?'];
+      const values = [profile_id];
+
+      if (module_id) {
+        filters.push('s.module_id = ?');
+        values.push(module_id);
+      }
+
+      values.push(limit);
+
+      const result = await pool.query(
+        `SELECT s.id, s.module_id, s.started_at, s.ended_at,
+                COUNT(a.id) as total_answers,
+                SUM(CASE WHEN a.is_correct = 1 THEN 1 ELSE 0 END) as correct_answers,
+                COALESCE(
+                  ROUND((julianday(COALESCE(s.ended_at, datetime('now'))) - julianday(s.started_at)) * 24 * 60),
+                  0
+                ) as duration_minutes
+         FROM sessions s
+         LEFT JOIN answers a ON a.session_id = s.id
+         WHERE ${filters.join(' AND ')}
+         GROUP BY s.id
+         ORDER BY s.started_at DESC
+         LIMIT ?`,
+        values
+      );
+      res.json(result.rows);
+    } catch (err) {
+      console.error('sessions/recent error:', err);
+      res.status(500).json({ error: 'Interní chyba serveru.' });
+    }
+  });
+
   // 6. Run seed
   console.log('Spouštím seed...');
   await runSeed(pool, modules);

@@ -637,7 +637,9 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         {/* Answer buttons */}
         {!answered && (() => {
           const qType = questionTypes[currentIndex] || 'fill-in'
-          if (qType === 'word-choice' && currentItem.display_word) {
+          const hasMultipleBlanks = (currentItem.template || '').split('___').length > 2
+          const effectiveQType = (qType === 'word-choice' && hasMultipleBlanks) ? 'fill-in' : qType
+          if (effectiveQType === 'word-choice' && currentItem.display_word) {
             const wrongVariant = makeWrongVariant(currentItem.display_word, currentItem.correct_answer)
             const wrongAnswer = currentItem.correct_answer === 'y' ? 'i' : 'y'
             const left = correctOnLeft

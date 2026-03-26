@@ -30,9 +30,7 @@
     Type="Port"
     Display="always"
     Required="true"
-    Mask="false">
-    3000
-  </Config>
+    Mask="false">3000</Config>
 
   <!-- Data (SQLite databáze) -->
   <Config
@@ -44,9 +42,7 @@
     Type="Path"
     Display="always"
     Required="true"
-    Mask="false">
-    /mnt/user/appdata/skolicka/db
-  </Config>
+    Mask="false">/mnt/user/appdata/skolicka/db</Config>
 
   <!-- Uploads (avatary) -->
   <Config
@@ -58,9 +54,7 @@
     Type="Path"
     Display="always"
     Required="true"
-    Mask="false">
-    /mnt/user/appdata/skolicka/uploads
-  </Config>
+    Mask="false">/mnt/user/appdata/skolicka/uploads</Config>
 
   <!-- PIN hash -->
   <Config

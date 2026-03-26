@@ -40,6 +40,10 @@ export const api = {
 
   getStatsTimeline: (profileId, days = 30) => request(`/api/stats/timeline?profile_id=${profileId}&days=${days}`),
   getStatsByModule: (profileId) => request(`/api/stats/by-module?profile_id=${profileId}`),
+
+  adminGetSentences: (token) => request('/api/modules/vyjmenovana-slova/admin/sentences', { headers: { Authorization: `Bearer ${token}` } }),
+  adminAddSentence: (data, token) => request('/api/modules/vyjmenovana-slova/admin/sentences', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+  adminDeleteSentence: (id, token) => request(`/api/modules/vyjmenovana-slova/admin/sentences/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 }
 
 export { BASE_URL as BASE_API_URL }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ChevronLeft, Download, Users, BookOpen, TrendingUp, Calendar, Target, Zap, Flame,
+  ChevronLeft, Download, Users, BookOpen, TrendingUp, Calendar, Target, Zap, Flame, ListPlus,
 } from 'lucide-react'
+import SentenceManager from '../components/SentenceManager.jsx'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
@@ -280,6 +281,7 @@ export default function ParentDashboard() {
         {[
           { id: 'global', label: 'Přehled', icon: TrendingUp },
           { id: 'vyjmenovana', label: 'Vyjmenovaná slova', icon: BookOpen },
+          { id: 'sentences', label: 'Správa vět', icon: ListPlus },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -403,6 +405,10 @@ export default function ParentDashboard() {
               </div>
             )}
           </>
+        )}
+
+        {!loading && activeView === 'sentences' && (
+          <SentenceManager token={token} />
         )}
 
         {!loading && activeView === 'vyjmenovana' && (

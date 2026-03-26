@@ -2,6 +2,7 @@ import express from 'express';
 import { selectSessionItems, updateItemProgress } from '../../core/spaced-repetition.js';
 import { updateStreak, getStreakCount } from '../../core/streaks.js';
 import { checkAndAwardBadges } from '../../core/badges.js';
+import { requirePin } from '../../core/auth.js';
 import {
   buildGetSentencesByIdsQuery,
   buildGetSentencesByLettersQuery,
@@ -10,6 +11,90 @@ import {
 } from './questions.js';
 
 const router = express.Router();
+
+// Detects y/i position in displayWord after the given consonant letter,
+// returns { correct_answer, template } or null if not found.
+function detectAnswerAndTemplate(sentence, displayWord, letter) {
+  const lower = displayWord.toLowerCase();
+  const letterLower = letter.toLowerCase();
+  for (let i = 0; i < lower.length; i++) {
+    if (lower[i] === letterLower) {
+      for (let j = i + 1; j < lower.length; j++) {
+        const ch = lower[j];
+        if ('yý'.includes(ch)) {
+          const modified = displayWord.slice(0, j) + '___' + displayWord.slice(j + 1);
+          const template = sentence.replace(displayWord, modified);
+          return { correct_answer: 'y', template };
+        }
+        if ('ií'.includes(ch)) {
+          const modified = displayWord.slice(0, j) + '___' + displayWord.slice(j + 1);
+          const template = sentence.replace(displayWord, modified);
+          return { correct_answer: 'i', template };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// GET /api/modules/vyjmenovana-slova/admin/sentences
+router.get('/admin/sentences', requirePin, async (req, res) => {
+  try {
+    const pool = req.app.locals.pool;
+    const result = await pool.query(
+      `SELECT vs.id, vs.template, vs.correct_answer, vs.display_word, vs.difficulty,
+              vw.letter, vw.word
+       FROM vslov_sentences vs
+       JOIN vslov_words vw ON vw.id = vs.word_id
+       ORDER BY vw.letter, vw.word, vs.id`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('GET admin/sentences error:', err);
+    res.status(500).json({ error: 'Interní chyba serveru.' });
+  }
+});
+
+// POST /api/modules/vyjmenovana-slova/admin/sentences
+router.post('/admin/sentences', requirePin, async (req, res) => {
+  const { letter, word, sentence, display_word, difficulty = 1 } = req.body;
+  if (!letter || !word || !sentence || !display_word) {
+    return res.status(400).json({ error: 'Chybí povinné parametry.' });
+  }
+  const detected = detectAnswerAndTemplate(sentence, display_word, letter);
+  if (!detected) {
+    return res.status(400).json({ error: `Ve slově "${display_word}" nebylo nalezeno y/í/i po písmenu ${letter}.` });
+  }
+  try {
+    const pool = req.app.locals.pool;
+    await pool.query(`INSERT OR IGNORE INTO vslov_words (letter, word) VALUES (?, ?)`, [letter.toUpperCase(), word]);
+    const wordResult = await pool.query(`SELECT id FROM vslov_words WHERE letter = ? AND word = ?`, [letter.toUpperCase(), word]);
+    const wordId = wordResult.rows[0].id;
+    await pool.query(
+      `INSERT INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty) VALUES (?, ?, ?, ?, ?)`,
+      [wordId, detected.template, detected.correct_answer, display_word, difficulty]
+    );
+    res.status(201).json({ template: detected.template, correct_answer: detected.correct_answer, display_word });
+  } catch (err) {
+    if (err.message?.includes('UNIQUE')) {
+      return res.status(409).json({ error: 'Tato věta již existuje.' });
+    }
+    console.error('POST admin/sentences error:', err);
+    res.status(500).json({ error: 'Interní chyba serveru.' });
+  }
+});
+
+// DELETE /api/modules/vyjmenovana-slova/admin/sentences/:id
+router.delete('/admin/sentences/:id', requirePin, async (req, res) => {
+  try {
+    const pool = req.app.locals.pool;
+    await pool.query(`DELETE FROM vslov_sentences WHERE id = ?`, [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE admin/sentences error:', err);
+    res.status(500).json({ error: 'Interní chyba serveru.' });
+  }
+});
 const MODULE_ID = 'vyjmenovana-slova';
 
 // GET /api/modules/vyjmenovana-slova/session?profile_id=X

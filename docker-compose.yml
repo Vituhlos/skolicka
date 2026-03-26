@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  skolicka:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PARENT_PIN_HASH: ${PARENT_PIN_HASH}
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - skolicka_data:/data
+      - skolicka_uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  skolicka_data:
+  skolicka_uploads:

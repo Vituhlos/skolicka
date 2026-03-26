@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>skolicka</Name>
+  <Repository>ghcr.io/Vituhlos/skolicka:latest</Repository>
+  <Registry>https://github.com/Vituhlos/skolicka/pkgs/container/skolicka</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Overview>
+    Interaktivní vzdělávací platforma pro děti školního věku.
+    Procvičuje vyjmenovaná slova (y/i) pomocí prostorového opakování (SM-2),
+    gamifikace (XP, odznaky, série) a rodičovského panelu se statistikami.
+    Vše v jednom kontejneru — žádná databáze navíc.
+  </Overview>
+  <Category>Other: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Vituhlos/skolicka/main/unraid/skolicka.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Vituhlos/skolicka/main/unraid/icon.png</Icon>
+  <Project>https://github.com/Vituhlos/skolicka</Project>
+  <Date>2025-01-01</Date>
+  <Changes></Changes>
+
+  <!-- Port -->
+  <Config
+    Name="Port"
+    Target="3000"
+    Default="3000"
+    Mode="tcp"
+    Description="Port pro přístup k aplikaci v prohlížeči."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">
+    3000
+  </Config>
+
+  <!-- Data (SQLite databáze) -->
+  <Config
+    Name="Data — databáze"
+    Target="/data"
+    Default="/mnt/user/appdata/skolicka/db"
+    Mode="rw"
+    Description="Cesta pro ukládání SQLite databáze."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">
+    /mnt/user/appdata/skolicka/db
+  </Config>
+
+  <!-- Uploads (avatary) -->
+  <Config
+    Name="Data — avatary"
+    Target="/app/uploads"
+    Default="/mnt/user/appdata/skolicka/uploads"
+    Mode="rw"
+    Description="Cesta pro ukládání avatarů profilů."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">
+    /mnt/user/appdata/skolicka/uploads
+  </Config>
+
+  <!-- PIN hash -->
+  <Config
+    Name="PIN hash (PARENT_PIN_HASH)"
+    Target="PARENT_PIN_HASH"
+    Default=""
+    Mode=""
+    Description="bcrypt hash rodičovského PINu. Vygeneruj: docker run --rm node:22-alpine node -e &quot;require('bcrypt').hash('TVUJ_PIN',10).then(h=>console.log(h))&quot;"
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true">
+  </Config>
+
+  <!-- JWT Secret -->
+  <Config
+    Name="JWT Secret (JWT_SECRET)"
+    Target="JWT_SECRET"
+    Default=""
+    Mode=""
+    Description="Náhodný řetězec min. 32 znaků. Vygeneruj: openssl rand -hex 32"
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true">
+  </Config>
+
+</Container>

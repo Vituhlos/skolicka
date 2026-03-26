@@ -1,0 +1,21 @@
+# Environment
+.env
+
+# Node
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Build
+frontend/dist/
+
+# Docker volumes (lokální data)
+postgres_data/
+avatars_data/
+
+# Uploads (avatary uživatelů)
+backend/uploads/
+
+# OS
+.DS_Store
+Thumbs.db

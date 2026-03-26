@@ -1,0 +1,170 @@
+[
+  {
+    "letter": "B",
+    "word": "být",
+    "template": "Dnes ráno jsem b___l nemocný.",
+    "correct_answer": "y",
+    "display_word": "byl",
+    "difficulty": 1
+  },
+  {
+    "letter": "B",
+    "word": "bydlet",
+    "template": "Moje rodina b___dlí v Praze.",
+    "correct_answer": "y",
+    "display_word": "bydlí",
+    "difficulty": 1
+  },
+  {
+    "letter": "B",
+    "word": "dobytek",
+    "template": "Farmář chová na statku dob___tek.",
+    "correct_answer": "y",
+    "display_word": "dobytek",
+    "difficulty": 2
+  },
+  {
+    "letter": "L",
+    "word": "lyže",
+    "template": "V zimě jezdíme na l___žích.",
+    "correct_answer": "y",
+    "display_word": "lyžích",
+    "difficulty": 1
+  },
+  {
+    "letter": "L",
+    "word": "lýtko",
+    "template": "Po běhání mě bolí l___tko.",
+    "correct_answer": "y",
+    "display_word": "lýtko",
+    "difficulty": 2
+  },
+  {
+    "letter": "L",
+    "word": "mlýn",
+    "template": "Stará budova ml___na stojí u řeky.",
+    "correct_answer": "y",
+    "display_word": "mlýna",
+    "difficulty": 2
+  },
+  {
+    "letter": "M",
+    "word": "mýt",
+    "template": "Každý večer si m___ji zuby.",
+    "correct_answer": "y",
+    "display_word": "myji",
+    "difficulty": 1
+  },
+  {
+    "letter": "M",
+    "word": "mýlit",
+    "template": "Každý se může čas od času m___lit.",
+    "correct_answer": "y",
+    "display_word": "mýlit",
+    "difficulty": 1
+  },
+  {
+    "letter": "M",
+    "word": "myš",
+    "template": "Pod stolem utíkala malá m___š.",
+    "correct_answer": "y",
+    "display_word": "myš",
+    "difficulty": 1
+  },
+  {
+    "letter": "P",
+    "word": "pytel",
+    "template": "Děda přinesl velký p___tel brambor.",
+    "correct_answer": "y",
+    "display_word": "pytel",
+    "difficulty": 1
+  },
+  {
+    "letter": "P",
+    "word": "pýcha",
+    "template": "P___cha přichází před pádem.",
+    "correct_answer": "y",
+    "display_word": "Pýcha",
+    "difficulty": 2
+  },
+  {
+    "letter": "P",
+    "word": "pyšný",
+    "template": "Táta byl p___šný na moji práci.",
+    "correct_answer": "y",
+    "display_word": "pyšný",
+    "difficulty": 1
+  },
+  {
+    "letter": "S",
+    "word": "sýr",
+    "template": "Na chléb si dám plátky s___ru.",
+    "correct_answer": "y",
+    "display_word": "sýru",
+    "difficulty": 1
+  },
+  {
+    "letter": "S",
+    "word": "sýkora",
+    "template": "Na větvi seděla malá s___kora.",
+    "correct_answer": "y",
+    "display_word": "sýkora",
+    "difficulty": 1
+  },
+  {
+    "letter": "S",
+    "word": "syn",
+    "template": "Maminka vzala s___na do školy.",
+    "correct_answer": "y",
+    "display_word": "syna",
+    "difficulty": 1
+  },
+  {
+    "letter": "V",
+    "word": "výlet",
+    "template": "O víkendu jedeme na v___let do hor.",
+    "correct_answer": "y",
+    "display_word": "výlet",
+    "difficulty": 1
+  },
+  {
+    "letter": "V",
+    "word": "vývoj",
+    "template": "Moderní technika prochází rychlým v___vojem.",
+    "correct_answer": "y",
+    "display_word": "vývojem",
+    "difficulty": 2
+  },
+  {
+    "letter": "V",
+    "word": "zvyk",
+    "template": "Ranní cvičení je dobrý zv___k.",
+    "correct_answer": "y",
+    "display_word": "zvyk",
+    "difficulty": 1
+  },
+  {
+    "letter": "Z",
+    "word": "jazyk",
+    "template": "Učím se nový jaz___k.",
+    "correct_answer": "y",
+    "display_word": "jazyk",
+    "difficulty": 1
+  },
+  {
+    "letter": "Z",
+    "word": "brzy",
+    "template": "Uvidíme se brz___.",
+    "correct_answer": "y",
+    "display_word": "brzy",
+    "difficulty": 1
+  },
+  {
+    "letter": "Z",
+    "word": "nazývat",
+    "template": "Jak se naz___vá toto zvíře?",
+    "correct_answer": "y",
+    "display_word": "nazývá",
+    "difficulty": 2
+  }
+]

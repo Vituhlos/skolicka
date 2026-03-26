@@ -229,7 +229,7 @@ async function main() {
   console.log('Seed dokončen.');
 
   // 7. Serve frontend static files (single-container setup)
-  const publicDir = path.join(__dirname, '../../public');
+  const publicDir = path.join(__dirname, '../public');
   app.use(express.static(publicDir));
   app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));

@@ -6,7 +6,9 @@ export default function ExercisePage() {
   const { moduleId, profileId } = useParams()
   const navigate = useNavigate()
 
-  const module = getModule(moduleId)
+  const isBoss = moduleId.endsWith('-boss')
+  const actualModuleId = isBoss ? moduleId.slice(0, -5) : moduleId
+  const module = getModule(actualModuleId)
 
   if (!module) {
     return (
@@ -43,6 +45,7 @@ export default function ExercisePage() {
     <ExerciseComponent
       profileId={profileId}
       onFinish={handleFinish}
+      boss={isBoss}
     />
   )
 }

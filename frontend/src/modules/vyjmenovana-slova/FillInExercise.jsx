@@ -48,7 +48,7 @@ function renderSentenceWithAnswer(template, givenAnswer, isCorrect) {
   )
 }
 
-export default function FillInExercise({ profileId, onFinish }) {
+export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const [items, setItems] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [sessionId, setSessionId] = useState(null)
@@ -65,8 +65,14 @@ export default function FillInExercise({ profileId, onFinish }) {
     const saved = localStorage.getItem(`vslov_letters_${profileId}`)
     return saved ? JSON.parse(saved) : ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
   })
-  const [letterPickerVisible, setLetterPickerVisible] = useState(true)
+  const [letterPickerVisible, setLetterPickerVisible] = useState(!boss)
   const navigate = useNavigate()
+
+  // Boss mode: auto-start with all letters on mount
+  useEffect(() => {
+    if (boss) startSession(['B', 'L', 'M', 'P', 'S', 'V', 'Z'])
+  }, [])
+
   const currentIndexRef = useRef(0)
   const correctCountRef = useRef(0)
   const totalXPRef = useRef(0)

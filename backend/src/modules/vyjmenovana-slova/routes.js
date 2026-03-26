@@ -531,7 +531,24 @@ router.get('/stats', async (req, res) => {
     const problematicQuery = buildProblematicWordsQuery(profile_id, 20);
     const problematicResult = await pool.query(problematicQuery.text, problematicQuery.values);
 
-    res.json({ by_letter: letterStats, problematic_words: problematicResult.rows });
+    const totalsResult = await pool.query(
+      `SELECT COUNT(*) as total_answers,
+              SUM(CASE WHEN a.is_correct = 1 THEN 1 ELSE 0 END) as correct_answers,
+              COALESCE(ROUND(SUM((julianday(s.ended_at) - julianday(s.started_at)) * 24 * 60)), 0) as total_time_minutes
+       FROM answers a
+       JOIN sessions s ON a.session_id = s.id
+       WHERE s.profile_id = ? AND s.module_id = 'vyjmenovana-slova' AND s.ended_at IS NOT NULL`,
+      [profile_id]
+    );
+    const totals = totalsResult.rows[0];
+
+    res.json({
+      by_letter: letterStats,
+      problematic_words: problematicResult.rows,
+      total_answers: parseInt(totals.total_answers, 10) || 0,
+      correct_answers: parseInt(totals.correct_answers, 10) || 0,
+      total_time_minutes: parseInt(totals.total_time_minutes, 10) || 0,
+    });
   } catch (err) {
     console.error('GET stats error:', err);
     res.status(500).json({ error: 'Interní chyba serveru.' });

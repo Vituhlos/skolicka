@@ -297,7 +297,20 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   }
 
   const currentItem = items[currentIndex]
-  if (!currentItem) return null
+  if (!currentItem) return (
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
+      <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎉</div>
+      <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.5rem', color: 'var(--color-text)', marginBottom: '8px' }}>
+        Výborně! Zatím není co procvičovat.
+      </h2>
+      <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+        Všechna slova máš dobře zažitá. Vrať se za chvíli.
+      </p>
+      <button onClick={handleBack} className="btn-clay btn-clay-primary" style={{ padding: '12px 28px', borderRadius: '16px', fontSize: '1rem' }}>
+        Zpět
+      </button>
+    </div>
+  )
 
   const progress = currentIndex + (answered ? 1 : 0)
 

@@ -30,7 +30,7 @@ router.post('/verify-pin', async (req, res) => {
     if (!pinHash) {
       const newHash = await bcrypt.hash(pin, 10);
       process.env.PARENT_PIN_HASH = newHash;
-      const token = jwt.sign({ role: 'parent' }, getJwtSecret(), { expiresIn: '30m' });
+      const token = jwt.sign({ role: 'parent' }, getJwtSecret(), { expiresIn: '8h' });
       return res.json({ token, message: 'PIN nastaven a ověřen.' });
     }
 
@@ -39,7 +39,7 @@ router.post('/verify-pin', async (req, res) => {
       return res.status(401).json({ error: 'Nesprávný PIN.' });
     }
 
-    const token = jwt.sign({ role: 'parent' }, getJwtSecret(), { expiresIn: '30m' });
+    const token = jwt.sign({ role: 'parent' }, getJwtSecret(), { expiresIn: '8h' });
     res.json({ token });
   } catch (err) {
     console.error('verify-pin error:', err);

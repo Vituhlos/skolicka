@@ -52,6 +52,13 @@ function formatDuration(minutes) {
   return rest > 0 ? `${hours} h ${rest} min` : `${hours} h`
 }
 
+function formatResponseTime(ms) {
+  const value = parseNumber(ms)
+  if (!value) return '—'
+  if (value < 1000) return `${value} ms`
+  return `${(value / 1000).toFixed(1)} s`
+}
+
 function calculateAccuracy(correct, total) {
   if (!total) return 0
   return Math.round((correct / total) * 100)
@@ -300,6 +307,117 @@ function ActivityHeatmap({ cells }) {
   )
 }
 
+function SessionDetailModal({ session, loading, onClose }) {
+  if (!session) return null
+
+  const mistakes = Array.isArray(session.answers)
+    ? session.answers.filter((answer) => !parseNumber(answer.is_correct))
+    : []
+
+  return (
+    <div className="modal-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
+      <div className="clay-card p-8 w-full max-w-lg mx-4 bounce-in" style={{ position: 'relative' }}>
+        <button
+          onClick={onClose}
+          className="btn-clay btn-clay-secondary"
+          style={{ position: 'absolute', top: '16px', right: '16px', padding: '8px 10px', borderRadius: '12px' }}
+        >
+          Zavřít
+        </button>
+
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.35rem', margin: '0 0 18px', color: 'var(--color-text)' }}>
+          Detail sezení
+        </h2>
+
+        <div style={{ display: 'grid', gap: '12px' }}>
+          {[
+            ['Datum', formatLongDate(session.started_at)],
+            ['Modul', session.moduleLabel],
+            ['Začátek', new Date(session.started_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })],
+            ['Konec', session.ended_at ? new Date(session.ended_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : 'Rozpracované'],
+            ['Otázky', String(session.totalAnswers)],
+            ['Správně', `${session.correctAnswers} z ${session.totalAnswers}`],
+            ['Přesnost', session.totalAnswers ? `${session.accuracy}%` : '—'],
+            ['Délka', formatDuration(session.durationMinutes)],
+            ['Stav', session.ended_at ? 'Dokončeno' : 'Rozpracované'],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '16px',
+                padding: '12px 14px',
+                border: '2px solid #E2E8F0',
+                borderRadius: '14px',
+                background: '#F8FAFC',
+              }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, color: 'var(--color-text-muted)' }}>{label}</span>
+              <span style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-text)', textAlign: 'right' }}>{value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '20px' }}>
+          <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.05rem', margin: '0 0 12px', color: 'var(--color-text)' }}>
+            Chyby v sezení
+          </h3>
+
+          {loading ? (
+            <div style={{
+              border: '2px solid #E2E8F0',
+              borderRadius: '14px',
+              background: '#F8FAFC',
+              padding: '14px 16px',
+              fontFamily: 'var(--font-body)',
+              color: 'var(--color-text-muted)',
+            }}>
+              Načítám detail odpovědí...
+            </div>
+          ) : mistakes.length > 0 ? (
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {mistakes.map((mistake) => (
+                <div
+                  key={mistake.id}
+                  style={{
+                    border: '2px solid #FECACA',
+                    borderRadius: '14px',
+                    background: '#FEF2F2',
+                    padding: '14px 16px',
+                  }}
+                >
+                  <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-body)', color: 'var(--color-text)' }}>
+                    {mistake.template || 'Bez detailu zadání'}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 14px', fontFamily: 'var(--font-body)', fontSize: '0.88rem' }}>
+                    <span><strong>Slovo:</strong> {mistake.display_word || '—'}</span>
+                    <span><strong>Písmeno:</strong> {mistake.letter || '—'}</span>
+                    <span><strong>Odpověď dítěte:</strong> {mistake.given_answer || '—'}</span>
+                    <span><strong>Správně:</strong> {mistake.correct_answer || '—'}</span>
+                    <span><strong>Čas:</strong> {formatResponseTime(mistake.response_time_ms)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              border: '2px solid #DCFCE7',
+              borderRadius: '14px',
+              background: '#F0FDF4',
+              padding: '14px 16px',
+              fontFamily: 'var(--font-body)',
+              color: '#166534',
+            }}>
+              V tomhle sezení nejsou zaznamenané žádné chyby.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ParentDashboard() {
   const navigate = useNavigate()
   const token = localStorage.getItem('parent_token')
@@ -317,6 +435,8 @@ export default function ParentDashboard() {
   const [timeline, setTimeline] = useState([])
   const [moduleStats, setModuleStats] = useState([])
   const [recentSessions, setRecentSessions] = useState([])
+  const [selectedSession, setSelectedSession] = useState(null)
+  const [sessionDetailLoading, setSessionDetailLoading] = useState(false)
 
   const [vslovStats, setVslovStats] = useState(null)
   const [vslovTimeline, setVslovTimeline] = useState([])
@@ -543,6 +663,31 @@ export default function ParentDashboard() {
       moduleLabel: moduleNameMap[session.module_id] || session.module_id,
     }
   })
+
+  const openSessionDetail = async (session) => {
+    setSelectedSession({ ...session, answers: null })
+    setSessionDetailLoading(true)
+    try {
+      const detail = await api.getSessionDetail(selectedProfileId, session.id)
+      setSelectedSession((current) => current && current.id === session.id
+        ? {
+            ...current,
+            ...detail,
+            totalAnswers: parseNumber(detail.total_answers),
+            correctAnswers: parseNumber(detail.correct_answers),
+            durationMinutes: parseNumber(detail.duration_minutes),
+            accuracy: calculateAccuracy(parseNumber(detail.correct_answers), parseNumber(detail.total_answers)),
+            answers: detail.answers || [],
+          }
+        : current)
+    } catch {
+      setSelectedSession((current) => current && current.id === session.id
+        ? { ...current, answers: [] }
+        : current)
+    } finally {
+      setSessionDetailLoading(false)
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
@@ -822,7 +967,19 @@ export default function ParentDashboard() {
                     </thead>
                     <tbody>
                       {sessionRows.map((session, index) => (
-                        <tr key={session.id} style={{ background: index % 2 === 0 ? '#F8FAFC' : 'white' }}>
+                        <tr
+                          key={session.id}
+                          onClick={() => openSessionDetail(session)}
+                          style={{ background: index % 2 === 0 ? '#F8FAFC' : 'white', cursor: 'pointer', transition: 'background 150ms ease, transform 150ms ease' }}
+                          onMouseEnter={(event) => {
+                            event.currentTarget.style.background = '#EFF6FF'
+                            event.currentTarget.style.transform = 'translateY(-1px)'
+                          }}
+                          onMouseLeave={(event) => {
+                            event.currentTarget.style.background = index % 2 === 0 ? '#F8FAFC' : 'white'
+                            event.currentTarget.style.transform = 'translateY(0)'
+                          }}
+                        >
                           <td style={{ padding: '10px 12px', fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--color-text)' }}>
                             {formatLongDate(session.started_at)}
                           </td>
@@ -1000,6 +1157,7 @@ export default function ParentDashboard() {
           </>
         )}
       </main>
+      <SessionDetailModal session={selectedSession} loading={sessionDetailLoading} onClose={() => setSelectedSession(null)} />
     </div>
   )
 }

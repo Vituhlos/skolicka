@@ -40,7 +40,8 @@ router.get('/', async (req, res) => {
     const pool = req.app.locals.pool;
 
     const result = await pool.query(
-      `SELECT p.id, p.name, p.avatar_url, p.color, p.created_at, p.daily_goal,
+      `SELECT p.id, p.name, p.avatar_url, p.avatar_preset, p.color, p.created_at, p.daily_goal,
+              p.school_class, p.parent_note, p.is_paused,
               COALESCE(SUM(x.amount), 0) as total_xp
        FROM child_profiles p
        LEFT JOIN xp_log x ON x.profile_id = p.id
@@ -75,7 +76,7 @@ router.get('/', async (req, res) => {
 // POST /api/profiles
 router.post('/', requirePin, async (req, res) => {
   try {
-    const { name, color } = req.body;
+    const { name, color, daily_goal, school_class, parent_note, avatar_preset, is_paused } = req.body;
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ error: 'Jméno je povinné.' });
     }
@@ -83,12 +84,22 @@ router.post('/', requirePin, async (req, res) => {
       return res.status(400).json({ error: 'Jméno je příliš dlouhé (max 50 znaků).' });
     }
 
+    const goal = daily_goal === undefined ? 15 : parseInt(daily_goal, 10);
+    if (Number.isNaN(goal) || goal < 5 || goal > 200) {
+      return res.status(400).json({ error: 'Denní cíl musí být 5–200.' });
+    }
+
+    const normalizedClass = school_class ? String(school_class).trim().slice(0, 30) : null;
+    const normalizedNote = parent_note ? String(parent_note).trim().slice(0, 300) : '';
+    const normalizedPreset = avatar_preset ? String(avatar_preset).trim().slice(0, 20) : null;
+    const pausedFlag = is_paused ? 1 : 0;
+
     const pool = req.app.locals.pool;
     const result = await pool.query(
-      `INSERT INTO child_profiles (name, color)
-       VALUES (?, ?)
-       RETURNING id, name, avatar_url, color, created_at`,
-      [name.trim(), color || '#2563EB']
+      `INSERT INTO child_profiles (name, color, daily_goal, school_class, parent_note, avatar_preset, is_paused)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, name, avatar_url, avatar_preset, color, created_at, daily_goal, school_class, parent_note, is_paused`,
+      [name.trim(), color || '#2563EB', goal, normalizedClass, normalizedNote, normalizedPreset, pausedFlag]
     );
 
     res.status(201).json(result.rows[0]);
@@ -102,7 +113,7 @@ router.post('/', requirePin, async (req, res) => {
 router.put('/:id', requirePin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, color, daily_goal } = req.body;
+    const { name, color, daily_goal, school_class, parent_note, avatar_preset, is_paused } = req.body;
     const pool = req.app.locals.pool;
 
     const existing = await pool.query(
@@ -132,6 +143,25 @@ router.put('/:id', requirePin, async (req, res) => {
       setClauses.push('daily_goal = ?');
       values.push(goal);
     }
+    if (school_class !== undefined) {
+      setClauses.push('school_class = ?');
+      values.push(school_class ? String(school_class).trim().slice(0, 30) : null);
+    }
+    if (parent_note !== undefined) {
+      setClauses.push('parent_note = ?');
+      values.push(parent_note ? String(parent_note).trim().slice(0, 300) : '');
+    }
+    if (avatar_preset !== undefined) {
+      setClauses.push('avatar_preset = ?');
+      values.push(avatar_preset ? String(avatar_preset).trim().slice(0, 20) : null);
+      if (avatar_preset) {
+        setClauses.push('avatar_url = NULL');
+      }
+    }
+    if (is_paused !== undefined) {
+      setClauses.push('is_paused = ?');
+      values.push(is_paused ? 1 : 0);
+    }
 
     if (setClauses.length === 0) {
       return res.status(400).json({ error: 'Žádná data k aktualizaci.' });
@@ -140,7 +170,7 @@ router.put('/:id', requirePin, async (req, res) => {
     values.push(id);
     const result = await pool.query(
       `UPDATE child_profiles SET ${setClauses.join(', ')} WHERE id = ?
-       RETURNING id, name, avatar_url, color, created_at`,
+       RETURNING id, name, avatar_url, avatar_preset, color, created_at, daily_goal, school_class, parent_note, is_paused`,
       values
     );
 
@@ -190,7 +220,7 @@ router.post('/:id/avatar', requirePin, (req, res) => {
       const avatarUrl = `/uploads/avatars/${id}.jpg`;
 
       await pool.query(
-        'UPDATE child_profiles SET avatar_url = ? WHERE id = ?',
+        'UPDATE child_profiles SET avatar_url = ?, avatar_preset = NULL WHERE id = ?',
         [avatarUrl, id]
       );
 

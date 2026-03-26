@@ -396,19 +396,8 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       }}>
         <button
           onClick={handleBack}
-          style={{
-            background: '#F1F5F9',
-            border: '2px solid #CBD5E1',
-            borderRadius: '12px',
-            padding: '6px 10px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontFamily: 'var(--font-body)',
-            fontSize: '0.85rem',
-            color: 'var(--color-text-muted)',
-          }}
+          className="btn-clay btn-clay-secondary"
+          style={{ padding: '6px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
         >
           <ChevronLeft size={16} />
         </button>
@@ -448,17 +437,8 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         {/* Sound toggle */}
         <button
           onClick={handleSoundToggle}
-          style={{
-            background: '#F1F5F9',
-            border: '2px solid #CBD5E1',
-            borderRadius: '10px',
-            padding: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-text-muted)',
-          }}
+          className="btn-clay btn-clay-secondary"
+          style={{ padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           title={soundOn ? 'Vypnout zvuk' : 'Zapnout zvuk'}
         >
           {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}

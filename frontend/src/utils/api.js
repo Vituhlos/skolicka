@@ -28,7 +28,13 @@ export const api = {
   createProfile: (data, token) => request('/api/profiles', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   updateProfile: (id, data, token) => request(`/api/profiles/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   deleteProfile: (id, token) => request(`/api/profiles/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
-  uploadAvatar: (id, formData, token) => fetch(`${BASE_URL}/api/profiles/${id}/avatar`, { method: 'POST', body: formData, headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+  uploadAvatar: (id, formData, token) => fetch(`${BASE_URL}/api/profiles/${id}/avatar`, { method: 'POST', body: formData, headers: { Authorization: `Bearer ${token}` } }).then(async (r) => {
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      throw new Error(err.error || `HTTP ${r.status}`)
+    }
+    return r.json()
+  }),
 
   verifyPin: (pin) => request('/api/auth/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),
 

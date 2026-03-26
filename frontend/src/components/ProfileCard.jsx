@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Archive, Calendar, Flag, Play, Settings, Sparkles } from 'lucide-react'
+import { Archive, Calendar, Flag, PauseCircle, Play, Settings, Sparkles, StickyNote, Users } from 'lucide-react'
 import { BASE_API_URL } from '../utils/api.js'
 import StreakBadge from './StreakBadge.jsx'
 
@@ -50,6 +50,27 @@ function AvatarDisplay({ profile, size = 80 }) {
     )
   }
 
+  if (profile.avatar_preset) {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          background: `${color}18`,
+          border: `3px solid ${color}`,
+          boxShadow: `0 3px 0 ${color}99`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: `${size * 0.42}px`,
+        }}
+      >
+        {profile.avatar_preset}
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
@@ -97,11 +118,12 @@ function InfoChip({ icon: Icon, label, value, accent = '#CBD5E1', background = '
   )
 }
 
-export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRecentlyActive }) {
+export default function ProfileCard({ profile, onSelect, onEdit, onArchive, onTogglePause, isRecentlyActive }) {
   const color = getColorForProfile(profile)
   const lastActiveLabel = formatLastActive(profile.last_active_date)
   const [showActions, setShowActions] = useState(false)
   const [confirmArchive, setConfirmArchive] = useState(false)
+  const isPaused = !!profile.is_paused
 
   return (
     <div
@@ -117,8 +139,9 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRe
         position: 'relative',
         transition: 'transform 180ms ease, box-shadow 180ms ease, background 180ms ease',
         background: isRecentlyActive ? 'linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)' : 'var(--color-surface)',
+        opacity: isPaused ? 0.78 : 1,
       }}
-      onClick={() => onSelect(profile)}
+      onClick={() => !isPaused && onSelect(profile)}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = 'translateY(-2px)'
       }}
@@ -192,6 +215,31 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRe
             }}
           >
             Upravit profil
+          </button>
+          <div style={{ height: '1px', background: '#E2E8F0' }} />
+          <button
+            onClick={(event) => {
+              event.stopPropagation()
+              setShowActions(false)
+              onTogglePause(profile)
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '10px 14px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.9rem',
+              color: '#475569',
+              textAlign: 'left',
+            }}
+          >
+            <PauseCircle size={14} />
+            {isPaused ? 'Obnovit profil' : 'Pozastavit profil'}
           </button>
           <div style={{ height: '1px', background: '#E2E8F0' }} />
           <button
@@ -289,7 +337,29 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRe
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', marginTop: isRecentlyActive ? '18px' : 0 }}>
+      {isPaused && (
+        <div style={{
+          position: 'absolute',
+          top: isRecentlyActive ? '42px' : '10px',
+          left: '10px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '5px 10px',
+          borderRadius: '999px',
+          border: '2px solid #CBD5E1',
+          background: '#F8FAFC',
+          color: '#475569',
+          fontFamily: 'var(--font-heading)',
+          fontSize: '0.76rem',
+          fontWeight: 700,
+        }}>
+          <PauseCircle size={12} />
+          Pozastavený
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', marginTop: isRecentlyActive || isPaused ? '22px' : 0 }}>
         <AvatarDisplay profile={profile} size={80} />
       </div>
 
@@ -311,6 +381,15 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRe
       </div>
 
       <div style={{ display: 'grid', gap: '8px', marginBottom: '14px', textAlign: 'left' }}>
+        {profile.school_class ? (
+          <InfoChip
+            icon={Users}
+            label="Třída"
+            value={profile.school_class}
+            accent="#7C3AED"
+            background="#F5F3FF"
+          />
+        ) : null}
         <InfoChip
           icon={Flag}
           label="Denní cíl"
@@ -325,6 +404,15 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRe
           accent={isRecentlyActive ? '#2563EB' : '#64748B'}
           background={isRecentlyActive ? '#EFF6FF' : '#F8FAFC'}
         />
+        {profile.parent_note ? (
+          <InfoChip
+            icon={StickyNote}
+            label="Poznámka"
+            value={profile.parent_note}
+            accent="#0F766E"
+            background="#F0FDFA"
+          />
+        ) : null}
       </div>
 
       <div style={{
@@ -341,8 +429,8 @@ export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRe
         fontWeight: 700,
         color,
       }}>
-        <Play size={15} />
-        Začít cvičit
+        {isPaused ? <PauseCircle size={15} /> : <Play size={15} />}
+        {isPaused ? 'Profil je pozastavený' : 'Začít cvičit'}
       </div>
     </div>
   )

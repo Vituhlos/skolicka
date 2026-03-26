@@ -328,25 +328,34 @@ function SessionDetailModal({ session, loading, onClose }) {
   return (
     <div className="modal-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
       <div
-        className="clay-card p-8 w-full max-w-3xl bounce-in"
+        className="clay-card bounce-in"
         style={{
           position: 'relative',
           margin: 'auto',
+          width: '100%',
+          maxWidth: '720px',
           maxHeight: 'calc(100vh - 32px)',
-          overflowY: 'auto',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <button
-          onClick={onClose}
-          className="btn-clay btn-clay-secondary"
-          style={{ position: 'sticky', top: 0, marginLeft: 'auto', display: 'block', padding: '8px 10px', borderRadius: '12px', zIndex: 1 }}
-        >
-          Zavřít
-        </button>
+        {/* Sticky header — outside scroll area */}
+        <div style={{ padding: '18px 24px 14px', borderBottom: '2px solid var(--color-border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.25rem', margin: 0, color: 'var(--color-text)' }}>
+            Detail sezení
+          </h2>
+          <button
+            onClick={onClose}
+            className="btn-clay btn-clay-secondary"
+            style={{ padding: '8px 14px', borderRadius: '12px' }}
+          >
+            Zavřít
+          </button>
+        </div>
 
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.35rem', margin: '8px 0 18px', color: 'var(--color-text)' }}>
-          Detail sezení
-        </h2>
+        {/* Scrollable body */}
+        <div style={{ overflowY: 'auto', padding: '20px 24px 24px', flex: 1 }}>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
           {summaryItems.map(([label, value]) => (
@@ -354,9 +363,9 @@ function SessionDetailModal({ session, loading, onClose }) {
               key={label}
               style={{
                 padding: '14px 16px',
-                border: '2px solid #E2E8F0',
+                border: '2px solid var(--color-border-light)',
                 borderRadius: '14px',
-                background: '#F8FAFC',
+                background: 'var(--color-bg)',
               }}
             >
               <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.76rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{label}</p>
@@ -372,9 +381,9 @@ function SessionDetailModal({ session, loading, onClose }) {
 
           {loading ? (
             <div style={{
-              border: '2px solid #E2E8F0',
+              border: '2px solid var(--color-border-light)',
               borderRadius: '14px',
-              background: '#F8FAFC',
+              background: 'var(--color-bg)',
               padding: '14px 16px',
               fontFamily: 'var(--font-body)',
               color: 'var(--color-text-muted)',
@@ -410,7 +419,7 @@ function SessionDetailModal({ session, loading, onClose }) {
                       Chyba {index + 1}
                     </span>
                     <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                      Cas odpovedi: {formatResponseTime(mistake.response_time_ms)}
+                      Čas odpovědi: {formatResponseTime(mistake.response_time_ms)}
                     </span>
                   </div>
 
@@ -421,7 +430,7 @@ function SessionDetailModal({ session, loading, onClose }) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '10px' }}>
                     <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#FFF1F2', border: '2px solid #FDA4AF' }}>
                       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.74rem', fontWeight: 700, color: '#9F1239' }}>
-                        Odpoved ditete
+                        Odpověď dítěte
                       </p>
                       <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-heading)', fontSize: '1rem', color: '#881337' }}>
                         {mistake.given_answer || '—'}
@@ -429,7 +438,7 @@ function SessionDetailModal({ session, loading, onClose }) {
                     </div>
                     <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#F0FDF4', border: '2px solid #86EFAC' }}>
                       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.74rem', fontWeight: 700, color: '#166534' }}>
-                        Spravne reseni
+                        Správné řešení
                       </p>
                       <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-heading)', fontSize: '1rem', color: '#166534' }}>
                         {mistake.correct_answer || '—'}
@@ -442,7 +451,7 @@ function SessionDetailModal({ session, loading, onClose }) {
                       Slovo: {mistake.display_word || '—'}
                     </span>
                     <span style={{ padding: '4px 10px', borderRadius: '999px', background: '#EFF6FF', border: '1px solid #BFDBFE', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: '#1D4ED8' }}>
-                      Pismeno: {mistake.letter || '—'}
+                      Písmeno: {mistake.letter || '—'}
                     </span>
                   </div>
                 </div>
@@ -461,6 +470,8 @@ function SessionDetailModal({ session, loading, onClose }) {
             </div>
           )}
         </div>
+
+        </div> {/* end scrollable body */}
       </div>
     </div>
   )
@@ -1018,13 +1029,13 @@ export default function ParentDashboard() {
                         <tr
                           key={session.id}
                           onClick={() => openSessionDetail(session)}
-                          style={{ background: index % 2 === 0 ? '#F8FAFC' : 'white', cursor: 'pointer', transition: 'background 150ms ease, transform 150ms ease' }}
+                          style={{ background: index % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)', cursor: 'pointer', transition: 'background 150ms ease, transform 150ms ease' }}
                           onMouseEnter={(event) => {
                             event.currentTarget.style.background = '#EFF6FF'
                             event.currentTarget.style.transform = 'translateY(-1px)'
                           }}
                           onMouseLeave={(event) => {
-                            event.currentTarget.style.background = index % 2 === 0 ? '#F8FAFC' : 'white'
+                            event.currentTarget.style.background = index % 2 === 0 ? 'var(--color-bg)' : 'var(--color-surface)'
                             event.currentTarget.style.transform = 'translateY(0)'
                           }}
                         >

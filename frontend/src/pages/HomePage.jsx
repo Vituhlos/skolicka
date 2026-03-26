@@ -10,6 +10,9 @@ const AVATAR_COLORS = [
   '#D97706', '#16A34A', '#0891B2', '#9333EA',
 ]
 
+const AVATAR_PRESETS = ['🦊', '🐻', '🐼', '🐯', '🦁', '🐸', '🐬', '🦄']
+const CLASS_OPTIONS = ['Předškolák', '1. třída', '2. třída', '3. třída', '4. třída', '5. třída']
+
 function StatusNotice({ notice, onClose }) {
   if (!notice) return null
 
@@ -46,6 +49,11 @@ function StatusNotice({ notice, onClose }) {
 function ProfileForm({ onSave, onCancel, initialData, token }) {
   const [name, setName] = useState(initialData?.name || '')
   const [color, setColor] = useState(initialData?.color || AVATAR_COLORS[0])
+  const [dailyGoal, setDailyGoal] = useState(initialData?.daily_goal || 15)
+  const [schoolClass, setSchoolClass] = useState(initialData?.school_class || '')
+  const [parentNote, setParentNote] = useState(initialData?.parent_note || '')
+  const [avatarPreset, setAvatarPreset] = useState(initialData?.avatar_preset || '')
+  const [isPaused, setIsPaused] = useState(!!initialData?.is_paused)
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -57,6 +65,7 @@ function ProfileForm({ onSave, onCancel, initialData, token }) {
     const file = event.target.files[0]
     if (!file) return
     setAvatarFile(file)
+    setAvatarPreset('')
     const reader = new FileReader()
     reader.onload = (ev) => setAvatarPreview(ev.target.result)
     reader.readAsDataURL(file)
@@ -74,10 +83,19 @@ function ProfileForm({ onSave, onCancel, initialData, token }) {
 
     try {
       let profile
+      const payload = {
+        name: name.trim(),
+        color,
+        daily_goal: Number(dailyGoal),
+        school_class: schoolClass || null,
+        parent_note: parentNote,
+        avatar_preset: avatarPreset || null,
+        is_paused: isPaused,
+      }
       if (isEdit) {
-        profile = await api.updateProfile(initialData.id, { name: name.trim(), color }, token)
+        profile = await api.updateProfile(initialData.id, payload, token)
       } else {
-        profile = await api.createProfile({ name: name.trim(), color }, token)
+        profile = await api.createProfile(payload, token)
       }
 
       if (avatarFile && profile?.id) {
@@ -96,7 +114,7 @@ function ProfileForm({ onSave, onCancel, initialData, token }) {
 
   return (
     <div className="modal-overlay" onClick={(event) => event.target === event.currentTarget && onCancel()}>
-      <div className="clay-card p-8 w-full max-w-sm mx-4 bounce-in">
+      <div className="clay-card p-8 w-full max-w-lg mx-4 bounce-in" style={{ maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
         <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.4rem', marginBottom: '0.35rem', color: 'var(--color-text)' }}>
           {isEdit ? 'Upravit profil' : 'Nový profil'}
         </h2>
@@ -154,6 +172,35 @@ function ProfileForm({ onSave, onCancel, initialData, token }) {
             </div>
           </div>
 
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontWeight: 700, marginBottom: '8px', color: 'var(--color-text)' }}>
+              Přednastavený avatar
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '8px' }}>
+              {AVATAR_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => {
+                    setAvatarPreset(preset)
+                    setAvatarFile(null)
+                    setAvatarPreview(null)
+                  }}
+                  className="btn-clay btn-clay-secondary"
+                  style={{
+                    padding: '10px 0',
+                    borderRadius: '14px',
+                    fontSize: '1.3rem',
+                    borderColor: avatarPreset === preset ? color : undefined,
+                    background: avatarPreset === preset ? `${color}18` : undefined,
+                  }}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontWeight: 700, marginBottom: '8px', color: 'var(--color-text)' }}>
               Fotka (volitelné)
@@ -161,6 +208,10 @@ function ProfileForm({ onSave, onCancel, initialData, token }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               {avatarPreview ? (
                 <img src={avatarPreview} alt="náhled" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: `3px solid ${color}`, flexShrink: 0 }} />
+              ) : avatarPreset ? (
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: `${color}22`, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', flexShrink: 0 }}>
+                  {avatarPreset}
+                </div>
               ) : (
                 <div style={{ width: 56, height: 56, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.4rem', color: '#fff', flexShrink: 0 }}>
                   {name ? name[0].toUpperCase() : '?'}
@@ -174,6 +225,105 @@ function ProfileForm({ onSave, onCancel, initialData, token }) {
               </label>
             </div>
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontWeight: 700, marginBottom: '6px', color: 'var(--color-text)' }}>
+                Třída
+              </label>
+              <select
+                value={schoolClass}
+                onChange={(event) => setSchoolClass(event.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '3px solid #CBD5E1',
+                  borderRadius: '14px',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
+              >
+                <option value="">Nevybráno</option>
+                {CLASS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontWeight: 700, marginBottom: '6px', color: 'var(--color-text)' }}>
+                Denní cíl
+              </label>
+              <input
+                type="number"
+                min="5"
+                max="200"
+                value={dailyGoal}
+                onChange={(event) => setDailyGoal(event.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  border: '3px solid #CBD5E1',
+                  borderRadius: '14px',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontWeight: 700, marginBottom: '6px', color: 'var(--color-text)' }}>
+              Poznámka pro rodiče
+            </label>
+            <textarea
+              value={parentNote}
+              onChange={(event) => setParentNote(event.target.value)}
+              rows={3}
+              placeholder="Např. procvičit měkké a tvrdé i/y nebo trénovat kratší bloky."
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '3px solid #CBD5E1',
+                borderRadius: '14px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '1rem',
+                outline: 'none',
+                boxSizing: 'border-box',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginBottom: '20px',
+            padding: '12px 14px',
+            border: '2px solid #CBD5E1',
+            borderRadius: '14px',
+            background: '#F8FAFC',
+            fontFamily: 'var(--font-body)',
+            color: 'var(--color-text)',
+            cursor: 'pointer',
+          }}>
+            <input
+              type="checkbox"
+              checked={isPaused}
+              onChange={(event) => setIsPaused(event.target.checked)}
+            />
+            Pozastavit profil a dočasně ho vyřadit z běžného cvičení
+          </label>
 
           {error && (
             <p style={{ color: 'var(--color-error)', fontFamily: 'var(--font-body)', fontWeight: 700, marginBottom: '12px' }}>{error}</p>
@@ -242,6 +392,7 @@ export default function HomePage() {
   }, [profiles])
 
   const handleSelectProfile = (profile) => {
+    if (profile.is_paused) return
     localStorage.setItem('current_profile_id', profile.id)
     navigate(`/profil/${profile.id}`)
   }
@@ -279,13 +430,48 @@ export default function HomePage() {
     }
   }
 
-  const handleArchiveProfile = async (profileId) => {
-    await api.deleteProfile(profileId, token)
+  const handleArchiveProfile = async (profileId, authToken = token) => {
+    await api.deleteProfile(profileId, authToken)
     await loadProfiles()
     setNotice({ type: 'success', message: 'Profil byl archivován.' })
   }
 
-  const handlePinSuccess = (newToken) => {
+  const handleTogglePause = async (profile, authToken = token) => {
+    const nextPaused = !profile.is_paused
+
+    try {
+      await api.updateProfile(profile.id, { is_paused: nextPaused }, authToken)
+      await loadProfiles()
+      setNotice({
+        type: 'success',
+        message: nextPaused ? 'Profil byl pozastaven.' : 'Profil byl znovu aktivován.',
+      })
+    } catch (err) {
+      setNotice({ type: 'error', message: err.message || 'Nepodařilo se změnit stav profilu.' })
+    }
+  }
+
+  const requestArchiveProfile = (profile) => {
+    if (token) {
+      handleArchiveProfile(profile.id)
+    } else {
+      setPendingManagedProfile(profile)
+      setPinAction('archive')
+      setShowPinModal(true)
+    }
+  }
+
+  const requestTogglePause = (profile) => {
+    if (token) {
+      handleTogglePause(profile)
+    } else {
+      setPendingManagedProfile(profile)
+      setPinAction('pause')
+      setShowPinModal(true)
+    }
+  }
+
+  const handlePinSuccess = async (newToken) => {
     setToken(newToken)
     setShowPinModal(false)
 
@@ -295,6 +481,12 @@ export default function HomePage() {
       openProfileForm(null)
     } else if (pinAction === 'edit' && pendingManagedProfile) {
       openProfileForm(pendingManagedProfile)
+      setPendingManagedProfile(null)
+    } else if (pinAction === 'archive' && pendingManagedProfile) {
+      await handleArchiveProfile(pendingManagedProfile.id, newToken)
+      setPendingManagedProfile(null)
+    } else if (pinAction === 'pause' && pendingManagedProfile) {
+      await handleTogglePause(pendingManagedProfile, newToken)
       setPendingManagedProfile(null)
     }
   }
@@ -365,7 +557,7 @@ export default function HomePage() {
           Kdo bude dnes cvicit?
         </h2>
         <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: '24px' }}>
-          Vyber profil a pokracuj v uceni. U profilu hned uvidis cil, streak i posledni aktivitu.
+          Vyber profil a pokračuj v učení. U profilu hned uvidíš cíl, streak, třídu i poslední aktivitu.
         </p>
 
         <StatusNotice notice={notice} onClose={() => setNotice(null)} />
@@ -400,7 +592,8 @@ export default function HomePage() {
                 profile={profile}
                 onSelect={handleSelectProfile}
                 onEdit={handleEditProfile}
-                onArchive={(managedProfile) => handleArchiveProfile(managedProfile.id)}
+                onArchive={requestArchiveProfile}
+                onTogglePause={requestTogglePause}
                 isRecentlyActive={profile.id === mostRecentProfileId}
               />
             ))}
@@ -448,7 +641,7 @@ export default function HomePage() {
                 Pridat dite
               </span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.88rem', textAlign: 'center', maxWidth: '180px' }}>
-                Vytvor novy profil a nastav mu barvu nebo fotku.
+                Vytvoř nový profil a nastav mu barvu, avatar i další detaily.
               </span>
             </div>
           </div>

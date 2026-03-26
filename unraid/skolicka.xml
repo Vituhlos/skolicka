@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>skolicka</Name>
-  <Repository>ghcr.io/Vituhlos/skolicka:latest</Repository>
+  <Repository>ghcr.io/vituhlos/skolicka:latest</Repository>
   <Registry>https://github.com/Vituhlos/skolicka/pkgs/container/skolicka</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>

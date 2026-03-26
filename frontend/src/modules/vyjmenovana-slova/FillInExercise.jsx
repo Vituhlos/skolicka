@@ -62,6 +62,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const [finishing, setFinishing] = useState(false)
   const [allNewBadges, setAllNewBadges] = useState([])
   const [wrongAnswers, setWrongAnswers] = useState([])
+  const [wrongStreak, setWrongStreak] = useState(0) // počet chyb na aktuální otázce
   const [selectedLetters, setSelectedLetters] = useState(() => {
     const saved = localStorage.getItem(`vslov_letters_${profileId}`)
     return saved ? JSON.parse(saved) : ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
@@ -102,6 +103,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       setCorrectCount(0)
       setAllNewBadges([])
       setWrongAnswers([])
+      setWrongStreak(0)
       questionStartTimeRef.current = Date.now()
     } catch (err) {
       setError('Nepodařilo se načíst cvičení. Zkus to znovu.')
@@ -144,6 +146,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         if (soundOn) playWrong()
         setShaking(true)
         setTimeout(() => setShaking(false), 600)
+        setWrongStreak((n) => n + 1)
         setWrongAnswers((prev) => [...prev, {
           template: currentItem.template,
           correct_answer: result.correct_answer,
@@ -176,13 +179,14 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         } else {
           setCurrentIndex(nextIndex)
           setAnswered(null)
+          setWrongStreak(0)
           questionStartTimeRef.current = Date.now()
         }
       }, isCorrect ? 1200 : 2500)
     } catch (err) {
       setError('Chyba při odesílání odpovědi')
     }
-  }, [answered, finishing, items, currentIndex, sessionId, profileId, soundOn, wrongAnswers])
+  }, [answered, finishing, items, currentIndex, sessionId, profileId, soundOn, wrongAnswers, wrongStreak])
 
   // Keyboard support (y / i keys) — musí být AŽ PO handleAnswer
   useEffect(() => {
@@ -540,6 +544,26 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Nápověda po druhé chybě */}
+        {wrongStreak >= 2 && !answered && currentItem?.letter && (
+          <div className="fade-in" style={{
+            marginBottom: '16px',
+            background: '#EFF6FF',
+            border: '2px solid #93C5FD',
+            borderRadius: '14px',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 0 #93C5FD',
+          }}>
+            <span style={{ fontSize: '1.2rem' }}>💡</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: '#1D4ED8' }}>
+              Toto je vyjmenované slovo po <strong>{currentItem.letter.toUpperCase()}</strong>
+            </span>
           </div>
         )}
 

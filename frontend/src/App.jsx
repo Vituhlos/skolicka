@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { applyStoredTheme } from './utils/theme.js'
 import HomePage from './pages/HomePage.jsx'
 import ModuleSelectPage from './pages/ModuleSelectPage.jsx'
 import ExercisePage from './pages/ExercisePage.jsx'
@@ -16,6 +17,8 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  useEffect(() => { applyStoredTheme() }, [])
+
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />

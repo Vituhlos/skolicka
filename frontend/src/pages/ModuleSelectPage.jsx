@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, BookOpen, Trophy } from 'lucide-react'
+import { ChevronLeft, BookOpen, Trophy, Moon, Sun } from 'lucide-react'
 import { api } from '../utils/api.js'
+import { useTheme } from '../utils/theme.js'
 import StreakBadge from '../components/StreakBadge.jsx'
 import XPBar from '../components/XPBar.jsx'
 import ProgressBar from '../components/ProgressBar.jsx'
@@ -18,6 +19,7 @@ export default function ModuleSelectPage() {
   const [bossStatuses, setBossStatuses] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [dark, toggleTheme] = useTheme()
 
   useEffect(() => {
     loadData()
@@ -142,6 +144,14 @@ export default function ModuleSelectPage() {
           <div className="xp-pill">
             {xpData?.total_xp || profile?.total_xp || 0} XP
           </div>
+          <button
+            onClick={toggleTheme}
+            className="btn-clay btn-clay-secondary"
+            style={{ width: '36px', height: '36px', padding: 0, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title={dark ? 'Světlý režim' : 'Tmavý režim'}
+          >
+            {dark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
       </header>
 

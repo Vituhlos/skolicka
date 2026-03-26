@@ -1,0 +1,19 @@
+{
+  "name": "Školička",
+  "short_name": "Školička",
+  "description": "Vzdělávací aplikace pro děti — vyjmenovaná slova a další",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "lang": "cs",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

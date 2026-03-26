@@ -47,15 +47,15 @@ function BadgeAward({ badge }) {
       style={{
         padding: '16px',
         textAlign: 'center',
-        borderColor: badgeColors[badge.badge_id] || '#2563EB',
-        boxShadow: `0 4px 0 ${badgeColors[badge.badge_id] || '#1D4ED8'}99`,
+        borderColor: badgeColors[badge.key] || '#2563EB',
+        boxShadow: `0 4px 0 ${badgeColors[badge.key] || '#1D4ED8'}99`,
       }}
     >
       <div style={{ fontSize: '2rem', marginBottom: '6px' }}>
-        {badge.badge_id.includes('streak') ? '🔥' : badge.badge_id.includes('perfect') ? '👑' : '⭐'}
+        {badge.key?.includes('streak') ? '🔥' : badge.key?.includes('perfect') ? '👑' : '⭐'}
       </div>
       <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>
-        {badge.name || badge.badge_id}
+        {badge.name || badge.key}
       </div>
     </div>
   )

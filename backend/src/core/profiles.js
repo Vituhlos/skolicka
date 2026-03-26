@@ -117,7 +117,7 @@ router.put('/:id', requirePin, async (req, res) => {
     }
     if (daily_goal !== undefined) {
       const goal = parseInt(daily_goal, 10);
-      if (isNaN(goal) || goal < 1 || goal > 200) return res.status(400).json({ error: 'Denní cíl musí být 1–200.' });
+      if (isNaN(goal) || goal < 5 || goal > 200) return res.status(400).json({ error: 'Denní cíl musí být 5–200.' });
       setClauses.push('daily_goal = ?');
       values.push(goal);
     }

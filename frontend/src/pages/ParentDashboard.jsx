@@ -371,7 +371,8 @@ export default function ParentDashboard() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
-                  onClick={() => { const v = Math.max(1, dailyGoal - 5); setDailyGoal(v); handleSaveDailyGoal(v) }}
+                  onClick={() => { const v = Math.max(5, Math.round(dailyGoal / 5) * 5 - 5); setDailyGoal(v); handleSaveDailyGoal(v) }}
+                  disabled={savingGoal || dailyGoal <= 5}
                   className="btn-clay btn-clay-secondary"
                   style={{ width: '36px', height: '36px', borderRadius: '10px', padding: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >−</button>
@@ -379,11 +380,12 @@ export default function ParentDashboard() {
                   {dailyGoal}
                 </span>
                 <button
-                  onClick={() => { const v = Math.min(200, dailyGoal + 5); setDailyGoal(v); handleSaveDailyGoal(v) }}
+                  onClick={() => { const v = Math.min(200, Math.round(dailyGoal / 5) * 5 + 5); setDailyGoal(v); handleSaveDailyGoal(v) }}
+                  disabled={savingGoal || dailyGoal >= 200}
                   className="btn-clay btn-clay-secondary"
                   style={{ width: '36px', height: '36px', borderRadius: '10px', padding: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >+</button>
-                {savingGoal && <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Ukládám…</span>}
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)', visibility: savingGoal ? 'visible' : 'hidden' }}>Ukládám…</span>
               </div>
             </div>
 

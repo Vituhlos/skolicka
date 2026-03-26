@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Settings, Trash2, Check, X } from 'lucide-react'
-import { api, BASE_API_URL } from '../utils/api.js'
+import { Archive, Calendar, Flag, Play, Settings, Sparkles } from 'lucide-react'
+import { BASE_API_URL } from '../utils/api.js'
 import StreakBadge from './StreakBadge.jsx'
 
 const AVATAR_COLORS = [
@@ -14,12 +14,25 @@ function getColorForProfile(profile) {
   return AVATAR_COLORS[idx]
 }
 
+function formatLastActive(dateValue) {
+  if (!dateValue) return 'Zatím bez aktivity'
+
+  const today = new Date()
+  const target = new Date(`${dateValue}T00:00:00`)
+  today.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((today - target) / 86400000)
+
+  if (diffDays === 0) return 'Aktivní dnes'
+  if (diffDays === 1) return 'Aktivní včera'
+  return `Naposledy ${new Date(dateValue).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}`
+}
+
 function AvatarDisplay({ profile, size = 80 }) {
   const [imgError, setImgError] = useState(false)
   const color = getColorForProfile(profile)
   const initial = (profile.name || '?')[0].toUpperCase()
 
-  if (!imgError && profile.has_avatar) {
+  if (!imgError && profile.avatar_url) {
     return (
       <img
         src={`${BASE_API_URL}/api/profiles/${profile.id}/avatar`}
@@ -52,7 +65,7 @@ function AvatarDisplay({ profile, size = 80 }) {
         fontFamily: 'var(--font-heading)',
         fontWeight: 700,
         fontSize: `${size * 0.4}px`,
-        color: color,
+        color,
       }}
     >
       {initial}
@@ -60,49 +73,35 @@ function AvatarDisplay({ profile, size = 80 }) {
   )
 }
 
-export default function ProfileCard({ profile, onSelect, onEdit, onDelete, token }) {
-  const [showActions, setShowActions] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+function InfoChip({ icon: Icon, label, value, accent = '#CBD5E1', background = '#F8FAFC' }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '8px 10px',
+      borderRadius: '12px',
+      border: `2px solid ${accent}`,
+      background,
+    }}>
+      <Icon size={14} color={accent} />
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+          {label}
+        </p>
+        <p style={{ margin: '1px 0 0', fontFamily: 'var(--font-heading)', fontSize: '0.86rem', color: 'var(--color-text)' }}>
+          {value}
+        </p>
+      </div>
+    </div>
+  )
+}
 
+export default function ProfileCard({ profile, onSelect, onEdit, onArchive, isRecentlyActive }) {
   const color = getColorForProfile(profile)
-
-  const handleSettingsClick = (e) => {
-    e.stopPropagation()
-    if (!token) {
-      onEdit(profile)
-      return
-    }
-    setShowActions(!showActions)
-    setConfirmDelete(false)
-  }
-
-  const handleEdit = (e) => {
-    e.stopPropagation()
-    setShowActions(false)
-    onEdit(profile)
-  }
-
-  const handleDeleteClick = (e) => {
-    e.stopPropagation()
-    setConfirmDelete(true)
-  }
-
-  const handleDeleteConfirm = async (e) => {
-    e.stopPropagation()
-    try {
-      await onDelete(profile.id)
-    } catch (err) {
-      console.error(err)
-    }
-    setConfirmDelete(false)
-    setShowActions(false)
-  }
-
-  const handleDeleteCancel = (e) => {
-    e.stopPropagation()
-    setConfirmDelete(false)
-    setShowActions(false)
-  }
+  const lastActiveLabel = formatLastActive(profile.last_active_date)
+  const [showActions, setShowActions] = useState(false)
+  const [confirmArchive, setConfirmArchive] = useState(false)
 
   return (
     <div
@@ -112,43 +111,56 @@ export default function ProfileCard({ profile, onSelect, onEdit, onDelete, token
         textAlign: 'center',
         cursor: 'pointer',
         borderColor: color,
-        boxShadow: `0 4px 0 ${color}99, 0 8px 24px rgba(0,0,0,0.08)`,
+        boxShadow: isRecentlyActive
+          ? `0 5px 0 ${color}, 0 14px 28px rgba(37, 99, 235, 0.16)`
+          : `0 4px 0 ${color}99, 0 8px 24px rgba(0,0,0,0.08)`,
         position: 'relative',
-        transition: 'all 200ms ease-out',
+        transition: 'transform 180ms ease, box-shadow 180ms ease, background 180ms ease',
+        background: isRecentlyActive ? 'linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)' : 'var(--color-surface)',
       }}
       onClick={() => onSelect(profile)}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = 'translateY(0)'
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setShowActions(false)
+          setConfirmArchive(false)
+        }
+      }}
     >
-      {/* Settings button */}
-      {token && (
-        <button
-          onClick={handleSettingsClick}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: '#F1F5F9',
-            border: '2px solid #CBD5E1',
-            borderRadius: '10px',
-            padding: '4px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-text-muted)',
-            zIndex: 2,
-          }}
-        >
-          <Settings size={15} />
-        </button>
-      )}
+      <button
+        onClick={(event) => {
+          event.stopPropagation()
+          setShowActions((current) => !current)
+          setConfirmArchive(false)
+        }}
+        className="btn-clay btn-clay-secondary"
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          padding: '6px',
+          borderRadius: '10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+        }}
+        aria-label={`Spravovat profil ${profile.name}`}
+      >
+        <Settings size={15} />
+      </button>
 
-      {/* Actions dropdown */}
-      {showActions && !confirmDelete && (
+      {showActions && !confirmArchive && (
         <div
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
           style={{
             position: 'absolute',
-            top: '40px',
+            top: '44px',
             right: '10px',
             background: 'var(--color-surface)',
             border: '2px solid #CBD5E1',
@@ -156,15 +168,18 @@ export default function ProfileCard({ profile, onSelect, onEdit, onDelete, token
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
             zIndex: 10,
             overflow: 'hidden',
-            minWidth: '130px',
+            minWidth: '160px',
+            textAlign: 'left',
           }}
         >
           <button
-            onClick={handleEdit}
+            onClick={(event) => {
+              event.stopPropagation()
+              setShowActions(false)
+              onEdit(profile)
+            }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              display: 'block',
               width: '100%',
               padding: '10px 14px',
               background: 'none',
@@ -176,12 +191,14 @@ export default function ProfileCard({ profile, onSelect, onEdit, onDelete, token
               textAlign: 'left',
             }}
           >
-            <Settings size={14} />
-            Upravit
+            Upravit profil
           </button>
           <div style={{ height: '1px', background: '#E2E8F0' }} />
           <button
-            onClick={handleDeleteClick}
+            onClick={(event) => {
+              event.stopPropagation()
+              setConfirmArchive(true)
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -193,77 +210,86 @@ export default function ProfileCard({ profile, onSelect, onEdit, onDelete, token
               cursor: 'pointer',
               fontFamily: 'var(--font-body)',
               fontSize: '0.9rem',
-              color: 'var(--color-error)',
+              color: '#C2410C',
               textAlign: 'left',
             }}
           >
-            <Trash2 size={14} />
-            Smazat
+            <Archive size={14} />
+            Archivovat profil
           </button>
         </div>
       )}
 
-      {/* Delete confirmation */}
-      {confirmDelete && (
+      {showActions && confirmArchive && (
         <div
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
           style={{
             position: 'absolute',
-            top: '40px',
+            top: '44px',
             right: '10px',
             background: 'var(--color-surface)',
-            border: '2px solid var(--color-error)',
+            border: '2px solid #FDBA74',
             borderRadius: '14px',
-            padding: '12px',
-            zIndex: 10,
-            textAlign: 'left',
-            minWidth: '160px',
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            zIndex: 10,
+            minWidth: '210px',
+            textAlign: 'left',
+            padding: '12px',
           }}
         >
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>
-            Opravdu smazat?
+          <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-body)', fontSize: '0.84rem', color: 'var(--color-text)' }}>
+            Opravdu archivovat tento profil?
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              onClick={handleDeleteConfirm}
-              style={{
-                flex: 1,
-                background: 'var(--color-error)',
-                color: 'white',
-                border: '2px solid var(--color-error-dark)',
-                borderRadius: '10px',
-                padding: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+              onClick={(event) => {
+                event.stopPropagation()
+                setShowActions(false)
+                setConfirmArchive(false)
+                onArchive(profile)
               }}
+              className="btn-clay btn-clay-primary"
+              style={{ flex: 1, padding: '8px 10px', borderRadius: '12px', background: '#F97316', borderColor: '#C2410C' }}
             >
-              <Check size={14} />
+              Ano
             </button>
             <button
-              onClick={handleDeleteCancel}
-              style={{
-                flex: 1,
-                background: '#F1F5F9',
-                color: 'var(--color-text)',
-                border: '2px solid #CBD5E1',
-                borderRadius: '10px',
-                padding: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+              onClick={(event) => {
+                event.stopPropagation()
+                setConfirmArchive(false)
               }}
+              className="btn-clay btn-clay-secondary"
+              style={{ flex: 1, padding: '8px 10px', borderRadius: '12px' }}
             >
-              <X size={14} />
+              Zpět
             </button>
           </div>
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+      {isRecentlyActive && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '5px 10px',
+          borderRadius: '999px',
+          border: '2px solid #BFDBFE',
+          background: '#EFF6FF',
+          color: '#1D4ED8',
+          fontFamily: 'var(--font-heading)',
+          fontSize: '0.76rem',
+          fontWeight: 700,
+        }}>
+          <Sparkles size={12} />
+          Naposledy aktivní
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', marginTop: isRecentlyActive ? '18px' : 0 }}>
         <AvatarDisplay profile={profile} size={80} />
       </div>
 
@@ -272,16 +298,51 @@ export default function ProfileCard({ profile, onSelect, onEdit, onDelete, token
         fontWeight: 700,
         fontSize: '1.1rem',
         color: 'var(--color-text)',
-        margin: '0 0 8px',
+        margin: '0 0 10px',
       }}>
         {profile.name}
       </h3>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <StreakBadge count={profile.streak || 0} size="sm" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        <StreakBadge count={profile.current_streak || profile.streak || 0} size="sm" />
         <div className="xp-pill" style={{ fontSize: '0.8rem', padding: '2px 8px' }}>
           {profile.total_xp || 0} XP
         </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: '8px', marginBottom: '14px', textAlign: 'left' }}>
+        <InfoChip
+          icon={Flag}
+          label="Denní cíl"
+          value={`${profile.daily_goal || 15} odpovědí`}
+          accent="#C2410C"
+          background="#FFF7ED"
+        />
+        <InfoChip
+          icon={Calendar}
+          label="Poslední aktivita"
+          value={lastActiveLabel}
+          accent={isRecentlyActive ? '#2563EB' : '#64748B'}
+          background={isRecentlyActive ? '#EFF6FF' : '#F8FAFC'}
+        />
+      </div>
+
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        width: '100%',
+        padding: '10px 12px',
+        borderRadius: '14px',
+        border: `2px solid ${color}`,
+        background: `${color}12`,
+        fontFamily: 'var(--font-heading)',
+        fontWeight: 700,
+        color,
+      }}>
+        <Play size={15} />
+        Začít cvičit
       </div>
     </div>
   )

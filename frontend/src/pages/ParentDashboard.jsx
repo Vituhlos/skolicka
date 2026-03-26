@@ -313,10 +313,21 @@ function SessionDetailModal({ session, loading, onClose }) {
   const mistakes = Array.isArray(session.answers)
     ? session.answers.filter((answer) => !parseNumber(answer.is_correct))
     : []
+  const summaryItems = [
+    ['Datum', formatLongDate(session.started_at)],
+    ['Modul', session.moduleLabel],
+    ['Začátek', new Date(session.started_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })],
+    ['Konec', session.ended_at ? new Date(session.ended_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : 'Rozpracované'],
+    ['Otázky', String(session.totalAnswers)],
+    ['Správně', `${session.correctAnswers} z ${session.totalAnswers}`],
+    ['Přesnost', session.totalAnswers ? `${session.accuracy}%` : '—'],
+    ['Délka', formatDuration(session.durationMinutes)],
+    ['Stav', session.ended_at ? 'Dokončeno' : 'Rozpracované'],
+  ]
 
   return (
     <div className="modal-overlay" onClick={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="clay-card p-8 w-full max-w-lg mx-4 bounce-in" style={{ position: 'relative' }}>
+      <div className="clay-card p-8 w-full max-w-3xl mx-4 bounce-in" style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
         <button
           onClick={onClose}
           className="btn-clay btn-clay-secondary"
@@ -329,32 +340,19 @@ function SessionDetailModal({ session, loading, onClose }) {
           Detail sezení
         </h2>
 
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {[
-            ['Datum', formatLongDate(session.started_at)],
-            ['Modul', session.moduleLabel],
-            ['Začátek', new Date(session.started_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })],
-            ['Konec', session.ended_at ? new Date(session.ended_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }) : 'Rozpracované'],
-            ['Otázky', String(session.totalAnswers)],
-            ['Správně', `${session.correctAnswers} z ${session.totalAnswers}`],
-            ['Přesnost', session.totalAnswers ? `${session.accuracy}%` : '—'],
-            ['Délka', formatDuration(session.durationMinutes)],
-            ['Stav', session.ended_at ? 'Dokončeno' : 'Rozpracované'],
-          ].map(([label, value]) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+          {summaryItems.map(([label, value]) => (
             <div
               key={label}
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '16px',
-                padding: '12px 14px',
+                padding: '14px 16px',
                 border: '2px solid #E2E8F0',
                 borderRadius: '14px',
                 background: '#F8FAFC',
               }}
             >
-              <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, color: 'var(--color-text-muted)' }}>{label}</span>
-              <span style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-text)', textAlign: 'right' }}>{value}</span>
+              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.76rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{label}</p>
+              <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-heading)', fontSize: '1rem', color: 'var(--color-text)' }}>{value}</p>
             </div>
           ))}
         </div>
@@ -377,7 +375,7 @@ function SessionDetailModal({ session, loading, onClose }) {
             </div>
           ) : mistakes.length > 0 ? (
             <div style={{ display: 'grid', gap: '10px' }}>
-              {mistakes.map((mistake) => (
+              {mistakes.map((mistake, index) => (
                 <div
                   key={mistake.id}
                   style={{
@@ -387,15 +385,57 @@ function SessionDetailModal({ session, loading, onClose }) {
                     padding: '14px 16px',
                   }}
                 >
-                  <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-body)', color: 'var(--color-text)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 10px',
+                      borderRadius: '999px',
+                      background: '#FEE2E2',
+                      border: '2px solid #FCA5A5',
+                      color: '#B91C1C',
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                    }}>
+                      Chyba {index + 1}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                      Cas odpovedi: {formatResponseTime(mistake.response_time_ms)}
+                    </span>
+                  </div>
+
+                  <p style={{ margin: '0 0 12px', fontFamily: 'var(--font-body)', color: 'var(--color-text)', fontSize: '1rem' }}>
                     {mistake.template || 'Bez detailu zadání'}
                   </p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 14px', fontFamily: 'var(--font-body)', fontSize: '0.88rem' }}>
-                    <span><strong>Slovo:</strong> {mistake.display_word || '—'}</span>
-                    <span><strong>Písmeno:</strong> {mistake.letter || '—'}</span>
-                    <span><strong>Odpověď dítěte:</strong> {mistake.given_answer || '—'}</span>
-                    <span><strong>Správně:</strong> {mistake.correct_answer || '—'}</span>
-                    <span><strong>Čas:</strong> {formatResponseTime(mistake.response_time_ms)}</span>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#FFF1F2', border: '2px solid #FDA4AF' }}>
+                      <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.74rem', fontWeight: 700, color: '#9F1239' }}>
+                        Odpoved ditete
+                      </p>
+                      <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-heading)', fontSize: '1rem', color: '#881337' }}>
+                        {mistake.given_answer || '—'}
+                      </p>
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#F0FDF4', border: '2px solid #86EFAC' }}>
+                      <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: '0.74rem', fontWeight: 700, color: '#166534' }}>
+                        Spravne reseni
+                      </p>
+                      <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-heading)', fontSize: '1rem', color: '#166534' }}>
+                        {mistake.correct_answer || '—'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ padding: '4px 10px', borderRadius: '999px', background: '#FFF7ED', border: '1px solid #FED7AA', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: '#9A3412' }}>
+                      Slovo: {mistake.display_word || '—'}
+                    </span>
+                    <span style={{ padding: '4px 10px', borderRadius: '999px', background: '#EFF6FF', border: '1px solid #BFDBFE', fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: '#1D4ED8' }}>
+                      Pismeno: {mistake.letter || '—'}
+                    </span>
                   </div>
                 </div>
               ))}

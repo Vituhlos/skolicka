@@ -51,7 +51,18 @@ router.get('/', async (req, res) => {
 
     const profiles = await Promise.all(result.rows.map(async (p) => {
       const current_streak = await getStreakCount(pool, p.id);
-      return { ...p, current_streak, total_xp: parseInt(p.total_xp, 10) };
+      const lastActiveResult = await pool.query(
+        `SELECT date FROM streaks WHERE profile_id = ? ORDER BY date DESC LIMIT 1`,
+        [p.id]
+      );
+      const last_active_date = lastActiveResult.rows[0]?.date || null;
+
+      return {
+        ...p,
+        current_streak,
+        last_active_date,
+        total_xp: parseInt(p.total_xp, 10)
+      };
     }));
 
     res.json(profiles);

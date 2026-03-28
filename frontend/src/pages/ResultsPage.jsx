@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Star, Trophy, Zap, RotateCcw, Home, Check } from 'lucide-react'
+import { playBossDefeated, isSoundEnabled } from '../utils/sounds.js'
 
 function AnimatedCounter({ target, duration = 1500 }) {
   const [value, setValue] = useState(0)
@@ -140,6 +141,13 @@ export default function ResultsPage() {
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
   const bossDefeated = isBoss && accuracy >= 60
   const msg = getMotivationalMessage(accuracy)
+
+  useEffect(() => {
+    if (bossDefeated && isSoundEnabled()) {
+      const t = setTimeout(playBossDefeated, 400)
+      return () => clearTimeout(t)
+    }
+  }, [])
 
   const handleRetry = () => {
     navigate(`/cviceni/${moduleId}/${profileId}`)

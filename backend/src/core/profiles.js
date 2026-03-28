@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { requirePin } from './auth.js';
+import { requirePin, optionalPin } from './auth.js';
 import { getStreakCount } from './streaks.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,9 +35,12 @@ const upload = multer({
 });
 
 // GET /api/profiles
-router.get('/', async (req, res) => {
+// Bez tokenu: vrátí jen data potřebná pro výběr profilu dítětem (bez school_class, parent_note)
+// S platným rodičovským tokenem: vrátí vše
+router.get('/', optionalPin, async (req, res) => {
   try {
     const pool = req.app.locals.pool;
+    const isParent = !!req.user;
 
     const result = await pool.query(
       `SELECT p.id, p.name, p.avatar_url, p.avatar_preset, p.color, p.created_at, p.daily_goal,
@@ -58,12 +61,26 @@ router.get('/', async (req, res) => {
       );
       const last_active_date = lastActiveResult.rows[0]?.date || null;
 
-      return {
-        ...p,
+      const base = {
+        id: p.id,
+        name: p.name,
+        avatar_url: p.avatar_url,
+        avatar_preset: p.avatar_preset,
+        color: p.color,
+        is_paused: p.is_paused,
+        daily_goal: p.daily_goal,
         current_streak,
         last_active_date,
-        total_xp: parseInt(p.total_xp, 10)
+        total_xp: parseInt(p.total_xp, 10),
       };
+
+      if (isParent) {
+        base.created_at = p.created_at;
+        base.school_class = p.school_class;
+        base.parent_note = p.parent_note;
+      }
+
+      return base;
     }));
 
     res.json(profiles);

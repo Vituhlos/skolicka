@@ -4,9 +4,19 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
+
+const pinRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Příliš mnoho nesprávných pokusů. Zkus to za 15 minut.' },
+  skipSuccessfulRequests: true, // úspěšné přihlášení se nepočítá
+});
 
 function getJwtSecret() {
   return process.env.JWT_SECRET || 'skolicka-default-secret-change-in-production';
@@ -17,7 +27,7 @@ function getParentPinHash() {
 }
 
 // POST /api/auth/verify-pin
-router.post('/verify-pin', async (req, res) => {
+router.post('/verify-pin', pinRateLimit, async (req, res) => {
   try {
     const { pin } = req.body;
     if (!pin || !/^\d{4}$/.test(pin)) {
@@ -90,6 +100,19 @@ export function requirePin(req, res, next) {
   } catch (err) {
     return res.status(401).json({ error: 'Neplatný nebo vypršelý token.' });
   }
+}
+
+// Volitelná autorizace — pokud token přítomen a platný, nastaví req.user; jinak pokračuje bez chyby
+export function optionalPin(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      req.user = jwt.verify(authHeader.slice(7), getJwtSecret());
+    } catch {
+      // token neplatný nebo vypršelý — ignorujeme, pokračujeme jako nepřihlášený
+    }
+  }
+  next();
 }
 
 export default router;

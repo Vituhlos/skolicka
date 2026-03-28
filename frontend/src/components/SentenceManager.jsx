@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Upload } from 'lucide-react'
-import { api } from '../utils/api.js'
+import { Plus, Trash2, Upload, Download } from 'lucide-react'
+import { api, BASE_API_URL } from '../utils/api.js'
 
 const LETTERS = ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
 
@@ -71,6 +71,7 @@ export default function SentenceManager({ token }) {
   const [importText, setImportText] = useState('')
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
+  const [exportFormat, setExportFormat] = useState('json')
 
   const candidates = useMemo(() => findCandidates(sentence, letter), [sentence, letter])
 
@@ -151,6 +152,26 @@ export default function SentenceManager({ token }) {
     } catch {
       setError('Nepodařilo se smazat.')
     }
+  }
+
+  function handleExport(format) {
+    const url = `${BASE_API_URL}/api/modules/vyjmenovana-slova/admin/sentences/export?format=${format}`
+    const a = document.createElement('a')
+    a.href = url
+    a.setAttribute('download', `skolicky-vety.${format}`)
+    // Pass token via URL is not ideal; use hidden iframe trick with Authorization header workaround:
+    // Instead fetch as blob and trigger download
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob)
+        a.href = blobUrl
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+      })
+      .catch(() => setError('Export se nezdařil.'))
   }
 
   const filtered = filterLetter === 'vše' ? sentences : sentences.filter(s => s.letter === filterLetter)
@@ -330,6 +351,24 @@ export default function SentenceManager({ token }) {
           <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', margin: 0 }}>
             Všechny věty ({filtered.length})
           </h2>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={() => handleExport('json')}
+              className="btn-clay btn-clay-secondary"
+              style={{ padding: '5px 12px', borderRadius: '10px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+              title="Exportovat jako JSON pro AI kontrolu"
+            >
+              <Download size={13} /> JSON
+            </button>
+            <button
+              onClick={() => handleExport('csv')}
+              className="btn-clay btn-clay-secondary"
+              style={{ padding: '5px 12px', borderRadius: '10px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+              title="Exportovat jako CSV"
+            >
+              <Download size={13} /> CSV
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {['vše', ...LETTERS].map(l => (
               <button

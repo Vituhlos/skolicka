@@ -654,7 +654,7 @@ export default function ParentDashboard() {
 
   const loadProfiles = async () => {
     try {
-      const data = await api.getProfiles()
+      const data = await api.getProfiles(token)
       const list = data.profiles || data || []
       setProfiles(list)
       if (list.length > 0) {
@@ -783,7 +783,7 @@ export default function ParentDashboard() {
   }
 
   const reloadProfiles = async () => {
-    const data = await api.getProfiles()
+    const data = await api.getProfiles(token)
     const list = data.profiles || data || []
     setProfiles(list)
     const currentExists = list.some((p) => String(p.id) === selectedProfileId)

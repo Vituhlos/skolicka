@@ -69,6 +69,39 @@ router.get('/admin/sentences', requirePin, async (req, res) => {
   }
 });
 
+// GET /api/modules/vyjmenovana-slova/admin/sentences/export
+// Vrátí všechny věty jako JSON vhodný pro AI kontrolu nebo jako seed.json
+router.get('/admin/sentences/export', requirePin, async (req, res) => {
+  try {
+    const pool = req.app.locals.pool;
+    const result = await pool.query(
+      `SELECT vw.letter, vw.word, vs.template, vs.correct_answer, vs.display_word, vs.difficulty
+       FROM vslov_sentences vs
+       JOIN vslov_words vw ON vw.id = vs.word_id
+       ORDER BY vw.letter, vw.word, vs.id`
+    );
+
+    const format = req.query.format || 'json'
+
+    if (format === 'csv') {
+      const header = 'letter,word,template,correct_answer,display_word,difficulty'
+      const rows = result.rows.map(r =>
+        [r.letter, r.word, `"${r.template.replace(/"/g, '""')}"`, r.correct_answer, r.display_word, r.difficulty].join(',')
+      )
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res.setHeader('Content-Disposition', 'attachment; filename="vslov-sentences.csv"')
+      return res.send([header, ...rows].join('\n'))
+    }
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="vslov-sentences.json"')
+    res.json(result.rows)
+  } catch (err) {
+    console.error('GET admin/sentences/export error:', err);
+    res.status(500).json({ error: 'Interní chyba serveru.' });
+  }
+});
+
 // POST /api/modules/vyjmenovana-slova/admin/sentences
 router.post('/admin/sentences', requirePin, async (req, res) => {
   const { letter, word, sentence, display_word, difficulty = 1 } = req.body;

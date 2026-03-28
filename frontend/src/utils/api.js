@@ -24,7 +24,7 @@ function toQuery(params) {
 }
 
 export const api = {
-  getProfiles: () => request('/api/profiles'),
+  getProfiles: (token) => request('/api/profiles', token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
   createProfile: (data, token) => request('/api/profiles', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   updateProfile: (id, data, token) => request(`/api/profiles/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   deleteProfile: (id, token) => request(`/api/profiles/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),

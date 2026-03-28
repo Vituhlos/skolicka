@@ -5,13 +5,41 @@ import { api, BASE_API_URL } from '../utils/api.js'
 const LETTERS = ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
 
 const WORD_LISTS = {
-  B: { y: 'bydlet, byt, být, bystrý, bylina, býk, příbytek, obyvatel, zabydlet, zbytečný', i: 'bitva, bič, biograf, biskvit' },
-  L: { y: 'lyže, lyžař, lykat, lýko, lýtko, lysý, mlýn, mlynář, plynout, plyn', i: 'líný, líbit, lípa, lístek, lítat, list, liška, lišit' },
-  M: { y: 'mýt, myslet, myš, mýdlo, mýval, zamyslet, umývat, mlýn', i: 'míč, mísa, mír, místo, milý, minuta, mistr, miska' },
-  P: { y: 'pyl, pysk, pytel, pýcha, pýr, pytlák, pyšný, opylovat', i: 'písek, píseň, píšťala, pilný, pirát, písmo, pilot' },
-  S: { y: 'syn, sýr, sypat, sychravý, sýček, syrový, sysel, sýkora, posypat', i: 'síla, síto, silný, sivý, sítě, síření' },
-  V: { y: 'vydat, vyhnat, vyjet, výr, výt, zvyk, jazyk, nazývat, výlet', i: 'vítr, víla, vír, víno, vítat, viset, vila, vína' },
-  Z: { y: 'zvyk, jazyk, brzy, nazývat, přezdívat, jazykový, jazykověda', i: 'zima, zítra, zívat, zisk, zinku, zívat, zimní' },
+  B: {
+    y: 'bydlet, byt, být, bystrý, bylina, býk, příbytek, obyvatel, zabydlet, zbytečný, bylinář, přebývat',
+    i: 'bitva, bič, bičovat, bílý, bílek, bída, bídný, bil (minulý čas od bít)',
+    note: '⚠️ Pozor na záměnu: být (exist) = y, ale bít (hit) = i',
+  },
+  L: {
+    y: 'lyže, lyžař, lykat, lýko, lýtko, lysý, lýsek, mlýn, mlynář, plynout, plyn, polykat',
+    i: 'líný, líbit, lípa, lístek, lítat, list, liška, lišit, líbat, líčit, líheň, líto, lipový',
+    note: '',
+  },
+  M: {
+    y: 'mýt, myslet, myš, mýdlo, mýval, zamyslet, umývat, přemýšlet, pomýlit, mýtit',
+    i: 'mít (have), míč, mísa, mír, místo, milý, minuta, mistr, miska, míra, míjet, místní, místnost',
+    note: '⚠️ Nejdůležitější záměna: mýt (wash) = y, ale mít (have) = i',
+  },
+  P: {
+    y: 'pyl, pysk, pytel, pýcha, pýr, pytlák, pyšný, opylovat, pyšnit se',
+    i: 'pít, písek, píseň, píšťala, pilný, písmo, pila, pilovat, písnička, pírko',
+    note: '⚠️ pít (drink) = i, pyl (pollen) = y',
+  },
+  S: {
+    y: 'syn, sýr, sypat, sychravý, sýček, syrový, sysel, sýkora, posypat, nasypat',
+    i: 'síla, síto, silný, sivý, sídlo, síň, sídliště, sít (sow), zásit',
+    note: '',
+  },
+  V: {
+    y: 'vydat, vyhnat, vyjet, výr, výt, zvyk, jazyk, nazývat, výlet, vybrat, výsledek, vyhrát',
+    i: 'vítr, víla, vír, víno, vítat, viset, vila, vidět, vítěz, vítězit, vinice, vidlička',
+    note: '',
+  },
+  Z: {
+    y: 'zvyk, jazyk, brzy, nazývat, přezdívat, jazykový, zvyknout, zažít (ve smyslu zvyku)',
+    i: 'zima, zítra, zívat, zisk, zimní, zírat, zít, sezóna (nepřímo)',
+    note: '',
+  },
 }
 
 function buildPrompt(letter) {
@@ -28,7 +56,7 @@ ${lists.y}
 
 Věty s I (běžná česká slova po tomto písmenu, která NEJSOU vyjmenovaná):
 ${lists.i}
-
+${lists.note ? `\n${lists.note}\n` : ''}
 NECHCI:
 - cizí slova (pizza, video, bicykl, limit...)
 - věty testující koncovky sloves

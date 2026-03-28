@@ -139,7 +139,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       setSessionId(data.session_id)
       const newItems = data.items || []
       setItems(newItems)
-      setQuestionTypes(newItems.map(() => Math.random() < 0.5 ? 'word-choice' : 'fill-in'))
+      setQuestionTypes(newItems.map(() => 'fill-in'))
       setCurrentIndex(0)
       setAnswered(null)
       setTotalXP(0)

@@ -397,10 +397,10 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       <header style={{
         background: 'var(--color-surface)',
         borderBottom: '3px solid #E2E8F0',
-        padding: '12px 20px',
+        padding: '10px 12px',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
+        gap: '8px',
         position: 'sticky',
         top: 0,
         zIndex: 20,
@@ -425,10 +425,9 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         <span style={{
           fontFamily: 'var(--font-heading)',
           fontWeight: 700,
-          fontSize: '0.9rem',
+          fontSize: '0.82rem',
           color: 'var(--color-text-muted)',
-          minWidth: '40px',
-          textAlign: 'right',
+          whiteSpace: 'nowrap',
         }}>
           {progress}/{items.length}
         </span>
@@ -441,7 +440,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         </div>
 
         {/* XP display */}
-        <div className={`xp-pill${xpPillFlash ? ' xp-pill-flash' : ''}`} style={{ fontSize: '0.85rem', padding: '2px 10px' }}>
+        <div className={`xp-pill${xpPillFlash ? ' xp-pill-flash' : ''}`} style={{ fontSize: '0.78rem', padding: '2px 8px' }}>
           +{totalXP} XP
         </div>
 
@@ -463,7 +462,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px 20px',
+        padding: '20px 16px',
         maxWidth: '600px',
         margin: '0 auto',
         width: '100%',
@@ -493,8 +492,8 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
           className={`clay-card question-enter ${answered ? (answered.isCorrect ? 'answer-correct' : 'answer-wrong') : ''} ${shaking ? 'shake' : ''}`}
           style={{
             width: '100%',
-            padding: '32px 28px',
-            marginBottom: '32px',
+            padding: 'clamp(20px, 5vw, 32px) clamp(16px, 5vw, 28px)',
+            marginBottom: '24px',
             textAlign: 'center',
             minHeight: '120px',
             display: 'flex',

@@ -180,6 +180,19 @@ router.delete('/admin/sentences/:id', requirePin, async (req, res) => {
     res.status(500).json({ error: 'Interní chyba serveru.' });
   }
 });
+
+// DELETE /api/modules/vyjmenovana-slova/admin/sentences — smaže všechny věty i slova
+router.delete('/admin/sentences', requirePin, async (req, res) => {
+  try {
+    const pool = req.app.locals.pool;
+    await pool.query(`DELETE FROM vslov_sentences`);
+    await pool.query(`DELETE FROM vslov_words`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE admin/sentences all error:', err);
+    res.status(500).json({ error: 'Interní chyba serveru.' });
+  }
+});
 const MODULE_ID = 'vyjmenovana-slova';
 
 // GET /api/modules/vyjmenovana-slova/session?profile_id=X

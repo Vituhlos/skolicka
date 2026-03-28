@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Upload, Download } from 'lucide-react'
+import { Plus, Trash2, Upload, Download, AlertTriangle } from 'lucide-react'
 import { api, BASE_API_URL } from '../utils/api.js'
 
 const LETTERS = ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
@@ -72,6 +72,7 @@ export default function SentenceManager({ token }) {
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
   const [exportFormat, setExportFormat] = useState('json')
+  const [deletingAll, setDeletingAll] = useState(false)
 
   const candidates = useMemo(() => findCandidates(sentence, letter), [sentence, letter])
 
@@ -172,6 +173,19 @@ export default function SentenceManager({ token }) {
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
       })
       .catch(() => setError('Export se nezdařil.'))
+  }
+
+  async function handleDeleteAll() {
+    if (!confirm(`Opravdu smazat všech ${sentences.length} vět? Tato akce je nevratná.`)) return
+    setDeletingAll(true)
+    try {
+      await api.adminDeleteAllSentences(token)
+      setSentences([])
+    } catch {
+      setError('Nepodařilo se smazat věty.')
+    } finally {
+      setDeletingAll(false)
+    }
   }
 
   const filtered = filterLetter === 'vše' ? sentences : sentences.filter(s => s.letter === filterLetter)
@@ -367,6 +381,20 @@ export default function SentenceManager({ token }) {
               title="Exportovat jako CSV"
             >
               <Download size={13} /> CSV
+            </button>
+            <button
+              onClick={handleDeleteAll}
+              disabled={deletingAll || sentences.length === 0}
+              style={{
+                padding: '5px 12px', borderRadius: '10px', fontSize: '0.82rem',
+                display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
+                border: '2px solid #DC2626', background: 'transparent', color: '#DC2626',
+                fontFamily: 'var(--font-heading)', fontWeight: 700,
+                boxShadow: '0 2px 0 #B91C1C', opacity: sentences.length === 0 ? 0.4 : 1,
+              }}
+              title="Smazat všechny věty"
+            >
+              <AlertTriangle size={13} /> Smazat vše
             </button>
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

@@ -65,6 +65,7 @@ export const api = {
   adminAddSentence: (data, token) => request('/api/modules/vyjmenovana-slova/admin/sentences', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
   adminBulkImport: (sentences, token) => request('/api/modules/vyjmenovana-slova/admin/sentences/bulk', { method: 'POST', body: JSON.stringify({ sentences }), headers: { Authorization: `Bearer ${token}` } }),
   adminDeleteSentence: (id, token) => request(`/api/modules/vyjmenovana-slova/admin/sentences/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+  adminDeleteAllSentences: (token) => request(`/api/modules/vyjmenovana-slova/admin/sentences`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 }
 
 export { BASE_URL as BASE_API_URL }

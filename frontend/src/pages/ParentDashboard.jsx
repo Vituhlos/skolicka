@@ -801,26 +801,33 @@ export default function ParentDashboard() {
   }
 
   const handleDeleteProfile = async (profileId) => {
+    const previous = profiles
+    setDeleteConfirm(null)
+    setProfiles((items) => items.filter((p) => String(p.id) !== String(profileId)))
     try {
       await api.deleteProfile(profileId, token)
-      setDeleteConfirm(null)
-      await reloadProfiles()
       setProfileNotice({ type: 'success', message: 'Profil byl smazán.' })
     } catch (err) {
-      setDeleteConfirm(null)
+      setProfiles(previous)
       setProfileNotice({ type: 'error', message: err.message || 'Nepodařilo se smazat profil.' })
     }
   }
 
   const handleTogglePauseProfile = async (profile) => {
+    const newPaused = !profile.is_paused
+    setProfiles((items) => items.map((p) =>
+      String(p.id) === String(profile.id) ? { ...p, is_paused: newPaused } : p
+    ))
     try {
-      await api.updateProfile(profile.id, { is_paused: !profile.is_paused }, token)
-      await reloadProfiles()
+      await api.updateProfile(profile.id, { is_paused: newPaused }, token)
       setProfileNotice({
         type: 'success',
-        message: profile.is_paused ? 'Profil byl znovu aktivován.' : 'Profil byl pozastaven.',
+        message: newPaused ? 'Profil byl pozastaven.' : 'Profil byl znovu aktivován.',
       })
     } catch (err) {
+      setProfiles((items) => items.map((p) =>
+        String(p.id) === String(profile.id) ? { ...p, is_paused: profile.is_paused } : p
+      ))
       setProfileNotice({ type: 'error', message: err.message || 'Nepodařilo se změnit stav profilu.' })
     }
   }

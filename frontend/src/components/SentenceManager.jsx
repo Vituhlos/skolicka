@@ -6,74 +6,78 @@ const LETTERS = ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
 
 const WORD_LISTS = {
   B: {
-    y: 'bydlet, byt, být, bystrý, bylina, býk, příbytek, obyvatel, zabydlet, zbytečný, bylinář, přebývat',
-    i: 'bitva, bič, bičovat, bílý, bílek, bída, bídný, bil (minulý čas od bít)',
-    note: '⚠️ Pozor na záměnu: být (exist) = y, ale bít (hit) = i',
+    vyjmenovana: 'být, bydlet, byt, bystrý, bylina, býk',
+    pribuzna: 'příbytek, nábytek, obyvatel, obývat, bydliště, přebývat, zabydlet, zbytečný, bylinář, obydlí, bydliště',
+    i_slova: 'bít (udeřit), bída, bídný, bílý, bílek, bitva, bič, bičovat',
+    zamenitelne: 'být (jsem) = Y  ×  bít (udeřit) = I',
   },
   L: {
-    y: 'lyže, lyžař, lykat, lýko, lýtko, lysý, lýsek, mlýn, mlynář, plynout, plyn, polykat',
-    i: 'líný, líbit, lípa, lístek, lítat, list, liška, lišit, líbat, líčit, líheň, líto, lipový',
-    note: '',
+    vyjmenovana: 'lyže, lýko, lýtko, lysý, lýsek, polykat',
+    pribuzna: 'lyžař, lyžovat, lyžařský, lysina, lyska, lýčí',
+    i_slova: 'líný, lípa, list, lístek, liška, líbat, líčit, lítat, líheň, lipový, líto (je mi líto)',
+    zamenitelne: '',
   },
   M: {
-    y: 'mýt, myslet, myš, mýdlo, mýval, zamyslet, umývat, přemýšlet, pomýlit, mýtit',
-    i: 'mít (have), míč, mísa, mír, místo, milý, minuta, mistr, miska, míra, míjet, místní, místnost',
-    note: '⚠️ Nejdůležitější záměna: mýt (wash) = y, ale mít (have) = i',
+    vyjmenovana: 'my, mýt, mýlit se, myš, myslet, mýtit, mýval, mykat',
+    pribuzna: 'umývat, zamyslet, přemýšlet, pomýlit, výmysl, smýkat, mýtina, myšlenka, přemýšlivý, nemyslet',
+    i_slova: 'mít (mám), míč, mísa, mír, místo, milý, mistr, miska, míra, míjet, místní, místnost, milovat, minuta',
+    zamenitelne: 'mýt (umývám) = Y  ×  mít (mám) = I',
   },
   P: {
-    y: 'pyl, pysk, pytel, pýcha, pýr, pytlák, pyšný, opylovat, pyšnit se',
-    i: 'pít, písek, píseň, píšťala, pilný, písmo, pila, pilovat, písnička, pírko',
-    note: '⚠️ pít (drink) = i, pyl (pollen) = y',
+    vyjmenovana: 'pyl, pysk, pytel, pýcha, pýr, pýřit se, pytlák',
+    pribuzna: 'opylovat, pyšný, pyšnit se, pytlačit, nepyšnit, pylový',
+    i_slova: 'pít, písek, píseň, píšťala, pilný, písmo, pila, pilovat, písnička, pilot',
+    zamenitelne: 'pyl (z květin) = Y  ×  pít (piju) = I',
   },
   S: {
-    y: 'syn, sýr, sypat, sychravý, sýček, syrový, sysel, sýkora, posypat, nasypat',
-    i: 'síla, síto, silný, sivý, sídlo, síň, sídliště, sít (sow), zásit',
-    note: '',
+    vyjmenovana: 'syn, sýr, sypat, sychravý, sýček, syrový, sysel, sýkora',
+    pribuzna: 'synovec, synovský, sýrový, nasypat, posypat, vysypat, prosypat, zasypat',
+    i_slova: 'síla, síto, silný, sivý, sídlo, síň, sídliště, sít (rozsévat), zásit, síření',
+    zamenitelne: '',
   },
   V: {
-    y: 'vydat, vyhnat, vyjet, výr, výt, zvyk, jazyk, nazývat, výlet, vybrat, výsledek, vyhrát',
-    i: 'vítr, víla, vír, víno, vítat, viset, vila, vidět, vítěz, vítězit, vinice, vidlička',
-    note: '',
+    vyjmenovana: 'vy, výr, výt',
+    pribuzna: 'předpona vy-/vý- je vždy Y: vydat, vyjít, vyhrát, vybrat, výlet, výsledek, výška, výkrik, vyhnat, vyrobit, vyučovat, vychovat, vysvětlit, výzva, výběr',
+    i_slova: 'vítr, víla, vír, víno, vítat, viset, vila, vidět, vítěz, vítězit, vinice, vidlička, vína',
+    zamenitelne: 'předpona VY- vždy Y (vydat, výlet)  ×  VI/VÍ bez předpony = I (vítr, vidět)',
   },
   Z: {
-    y: 'zvyk, jazyk, brzy, nazývat, přezdívat, jazykový, zvyknout, zažít (ve smyslu zvyku)',
-    i: 'zima, zítra, zívat, zisk, zimní, zírat, zít, sezóna (nepřímo)',
-    note: '',
+    vyjmenovana: 'zvyk, jazyk, brzy',
+    pribuzna: 'zvyknout, jazykový, jazykověda, přezdívat, nazývat, jazykozpytec, zvykový, přezdívka',
+    i_slova: 'zima, zítra, zívat, zisk, zimní, zírat, živý, žít (pozor — ž, ne z), zinek',
+    zamenitelne: '',
   },
 }
 
 function buildPrompt(letter) {
   const lists = WORD_LISTS[letter] || WORD_LISTS['B']
-  return `Generuješ věty pro českou výuku vyjmenovaných slov — cvičení y/i po písmenu ${letter}.
+  return `Generuješ věty pro českou aplikaci na výuku vyjmenovaných slov (3.–4. třída ZŠ).
+Cvičení: dítě vidí větu s mezerou a vybírá y nebo i.
+Pravidlo: "Po ${letter} píšu y jen u vyjmenovaných slov a jejich příbuzných."
 
-Dítě vidí větu s mezerou a vybírá y nebo i. Musí použít pravidlo:
-"Po ${letter} píšu y jen u vyjmenovaných slov a jejich příbuzných."
+━━━ VYJMENOVANÁ SLOVA po ${letter} ━━━
+${lists.vyjmenovana}
 
-CHCI OBOJE — asi 60 % věty s y, 40 % věty s i:
+━━━ PŘÍBUZNÁ SLOVA (odvozená, píší se také s y) ━━━
+${lists.pribuzna}
 
-Věty s Y (vyjmenovaná/příbuzná slova):
-${lists.y}
+━━━ SLOVA S I (nejsou vyjmenovaná, píší se s i/í) ━━━
+${lists.i_slova}
+${lists.zamenitelne ? `\n⚠️  NEJDŮLEŽITĚJŠÍ ZÁMĚNA: ${lists.zamenitelne}\n` : ''}
+━━━ POKYNY ━━━
+- Vygeneruj 25 vět: ~15 s Y (vyjmenovaná + příbuzná), ~10 s I (nevyjmenovaná)
+- Záměnám věnuj pozornost — alespoň 3 věty musí testovat nejdůležitější záměnu
+- Věty musí být krátké a srozumitelné pro 3.–4. třídu ZŠ
+- Nepoužívej cizí slova (pizza, video, bicykl...)
+- Každé slovo nejvýše jednou
 
-Věty s I (běžná česká slova po tomto písmenu, která NEJSOU vyjmenovaná):
-${lists.i}
-${lists.note ? `\n${lists.note}\n` : ''}
-NECHCI:
-- cizí slova (pizza, video, bicykl, limit...)
-- věty testující koncovky sloves
-- slova která dítě 2.–4. třídy nezná
-
-Formát výstupu — pouze JSON pole, nic jiného:
+━━━ FORMÁT — pouze JSON pole, nic jiného ━━━
 [
   { "letter": "${letter}", "word": "příklad", "sentence": "Celá věta s normálně napsaným slovem." }
 ]
 
-Pravidla:
-- "sentence" obsahuje větu s normálně napsaným y nebo i (bez mezer/teček navíc)
-- "word" je základní tvar slova
-- každé slovo nejvýše jednou
-- věty krátké, srozumitelné pro 2.–4. třídu ZŠ
-
-Vygeneruj 20 vět.`
+- "sentence" = věta s normálně napsaným y nebo i (bez mezer, bez teček navíc)
+- "word" = základní tvar slova (infinitiv / 1. pád)`
 }
 
 // Find all words in the sentence that contain y/ý/i/í after the given letter

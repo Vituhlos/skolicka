@@ -79,6 +79,9 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
   const [allNewBadges, setAllNewBadges] = useState([])
   const [wrongAnswers, setWrongAnswers] = useState([])
   const [wrongStreak, setWrongStreak] = useState(0) // počet chyb na aktuální otázce
+  const [xpPopups, setXpPopups] = useState([])
+  const [xpPillFlash, setXpPillFlash] = useState(false)
+  const [questionKey, setQuestionKey] = useState(0)
   const [selectedLetters, setSelectedLetters] = useState(() => {
     const saved = localStorage.getItem(`vslov_letters_${profileId}`)
     return saved ? JSON.parse(saved) : ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
@@ -200,6 +203,13 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
       }
 
       setTotalXP((xp) => xp + xpEarned)
+      if (xpEarned > 0) {
+        const popupId = Date.now()
+        setXpPopups((prev) => [...prev, { id: popupId, amount: xpEarned }])
+        setTimeout(() => setXpPopups((prev) => prev.filter((p) => p.id !== popupId)), 1100)
+        setXpPillFlash(true)
+        setTimeout(() => setXpPillFlash(false), 600)
+      }
       if (newBadges.length > 0) {
         setAllNewBadges((prev) => [...prev, ...newBadges])
       }
@@ -225,6 +235,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
           setCurrentIndex(nextIndex)
           setAnswered(null)
           setWrongStreak(0)
+          setQuestionKey((k) => k + 1)
           questionStartTimeRef.current = Date.now()
         }
       }, isCorrect ? 1200 : 2500)
@@ -430,7 +441,7 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
         </div>
 
         {/* XP display */}
-        <div className="xp-pill" style={{ fontSize: '0.85rem', padding: '2px 10px' }}>
+        <div className={`xp-pill${xpPillFlash ? ' xp-pill-flash' : ''}`} style={{ fontSize: '0.85rem', padding: '2px 10px' }}>
           +{totalXP} XP
         </div>
 
@@ -478,7 +489,8 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
 
         {/* Sentence card */}
         <div
-          className={`clay-card ${answered ? (answered.isCorrect ? 'answer-correct' : 'answer-wrong') : ''} ${shaking ? 'shake' : ''}`}
+          key={questionKey}
+          className={`clay-card question-enter ${answered ? (answered.isCorrect ? 'answer-correct' : 'answer-wrong') : ''} ${shaking ? 'shake' : ''}`}
           style={{
             width: '100%',
             padding: '32px 28px',
@@ -509,6 +521,15 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
               : renderSentenceWithBlank(currentItem.template)
             }
           </div>
+        </div>
+
+        {/* XP float popups */}
+        <div style={{ position: 'relative', height: 0, width: '100%' }}>
+          {xpPopups.map((popup) => (
+            <div key={popup.id} className="xp-float-popup">
+              +{popup.amount} XP
+            </div>
+          ))}
         </div>
 
         {/* Feedback overlay */}

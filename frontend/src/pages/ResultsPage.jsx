@@ -112,7 +112,7 @@ function BadgeAward({ badge }) {
       }}
     >
       <div style={{ fontSize: '2rem', marginBottom: '6px' }}>
-        {badge.key?.includes('streak') ? '🔥' : badge.key?.includes('perfect') ? '👑' : '⭐'}
+        {badge.icon || (badge.key?.includes('streak') ? '🔥' : badge.key?.includes('perfect') ? '👑' : '⭐')}
       </div>
       <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>
         {badge.name || badge.key}
@@ -126,6 +126,7 @@ export default function ResultsPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const isBoss = moduleId.endsWith('-boss')
   const results = location.state?.results || {}
   const {
     correct = 0,
@@ -137,6 +138,7 @@ export default function ResultsPage() {
   } = results
 
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0
+  const bossDefeated = isBoss && accuracy >= 60
   const msg = getMotivationalMessage(accuracy)
 
   const handleRetry = () => {
@@ -149,20 +151,51 @@ export default function ResultsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '24px' }}>
-      {accuracy === 100 && <Confetti />}
+      {(accuracy === 100 || bossDefeated) && <Confetti />}
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-        {/* Motivational message */}
-        <div style={{ textAlign: 'center', marginBottom: '24px', marginTop: '16px' }}>
-          <h1 style={{
-            fontFamily: 'var(--font-heading)',
-            fontWeight: 700,
-            fontSize: '2rem',
-            color: msg.color,
-            margin: '0 0 8px',
-          }}>
-            {msg.text}
-          </h1>
-        </div>
+
+        {/* Boss defeated hero */}
+        {isBoss && (
+          <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '16px' }}>
+            <div style={{ fontSize: '4rem', lineHeight: 1, marginBottom: '12px' }}>
+              {bossDefeated ? '🏆' : '💀'}
+            </div>
+            <h1 style={{
+              fontFamily: 'var(--font-heading)',
+              fontWeight: 800,
+              fontSize: '2.2rem',
+              color: bossDefeated ? '#D97706' : 'var(--color-error)',
+              margin: '0 0 8px',
+            }}>
+              {bossDefeated ? 'Boss poražen!' : 'Boss vyhrál...'}
+            </h1>
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '1rem',
+              color: 'var(--color-text-muted)',
+              margin: 0,
+            }}>
+              {bossDefeated
+                ? 'Dokázal jsi to! Vyjmenovaná slova zvládáš na jedničku.'
+                : 'Nevzdávej se — příště to boss odneseš!'}
+            </p>
+          </div>
+        )}
+
+        {/* Normal motivational message */}
+        {!isBoss && (
+          <div style={{ textAlign: 'center', marginBottom: '24px', marginTop: '16px' }}>
+            <h1 style={{
+              fontFamily: 'var(--font-heading)',
+              fontWeight: 700,
+              fontSize: '2rem',
+              color: msg.color,
+              margin: '0 0 8px',
+            }}>
+              {msg.text}
+            </h1>
+          </div>
+        )}
 
         {/* Score card */}
         <div className="clay-card" style={{
@@ -343,21 +376,23 @@ export default function ResultsPage() {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={handleRetry}
-            className="btn-clay btn-clay-secondary"
-            style={{ flex: 1, padding: '14px', borderRadius: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          >
-            <RotateCcw size={18} />
-            Znovu
-          </button>
+          {!bossDefeated && (
+            <button
+              onClick={handleRetry}
+              className={`btn-clay ${isBoss ? 'btn-clay-boss' : 'btn-clay-secondary'}`}
+              style={{ flex: 1, padding: '14px', borderRadius: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <RotateCcw size={18} />
+              {isBoss ? 'Zkusit znovu' : 'Znovu'}
+            </button>
+          )}
           <button
             onClick={handleDone}
-            className="btn-clay btn-clay-primary"
+            className={`btn-clay ${bossDefeated ? 'btn-clay-boss' : 'btn-clay-primary'}`}
             style={{ flex: 1, padding: '14px', borderRadius: '18px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            <Check size={18} />
-            Hotovo
+            {bossDefeated ? <Trophy size={18} /> : <Check size={18} />}
+            {bossDefeated ? 'Zpět na profil' : 'Hotovo'}
           </button>
         </div>
       </div>

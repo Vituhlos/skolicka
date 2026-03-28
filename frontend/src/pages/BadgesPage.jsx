@@ -129,7 +129,7 @@ export default function BadgesPage() {
       {/* Header */}
       <header style={{
         background: 'var(--color-surface)',
-        borderBottom: '3px solid #E2E8F0',
+        borderBottom: '3px solid var(--color-border-light)',
         padding: '14px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -170,7 +170,7 @@ export default function BadgesPage() {
           <div style={{ textAlign: 'center', padding: '48px' }}>
             <div style={{
               width: '40px', height: '40px',
-              border: '3px solid #E2E8F0',
+              border: '3px solid var(--color-border-light)',
               borderTop: '3px solid var(--color-primary)',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',

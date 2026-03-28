@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ChevronLeft, BookOpen, Trophy, Moon, Sun } from 'lucide-react'
+import { ChevronLeft, ChevronRight, BookOpen, Trophy, Moon, Sun } from 'lucide-react'
 import { api } from '../utils/api.js'
 import { useTheme } from '../utils/theme.js'
 import StreakBadge from '../components/StreakBadge.jsx'
@@ -20,6 +20,7 @@ export default function ModuleSelectPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [masteredLetter, setMasteredLetter] = useState(null) // písmeno k oslavě
+  const [earnedBadges, setEarnedBadges] = useState([])
   const [dark, toggleTheme] = useTheme()
 
   useEffect(() => {
@@ -53,6 +54,12 @@ export default function ModuleSelectPage() {
       if (modulesData.status === 'fulfilled') {
         setApiModules(modulesData.value.modules || modulesData.value || [])
       }
+
+      // Načíst odznaky
+      try {
+        const badgeData = await api.getBadges(profileId)
+        setEarnedBadges(badgeData.earned || [])
+      } catch { /* ignore */ }
 
       // Fetch boss statuses for registered modules
       const bossPromises = registeredModules.map(async (mod) => {
@@ -365,14 +372,34 @@ export default function ModuleSelectPage() {
         </div>
 
         {/* Badges link */}
-        <div style={{ textAlign: 'center', marginTop: '32px' }}>
-          <button
-            onClick={() => navigate(`/odznaky/${profileId}`)}
-            className="btn-clay btn-clay-secondary"
-            style={{ padding: '10px 24px', borderRadius: '16px', fontSize: '0.95rem' }}
-          >
-            Moje odznaky
-          </button>
+        <div
+          onClick={() => navigate(`/odznaky/${profileId}`)}
+          className="clay-card hoverable"
+          style={{ marginTop: '24px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px' }}
+        >
+          <div style={{ fontSize: '1.8rem', lineHeight: 1 }}>🏅</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>
+              Moje odznaky
+            </div>
+            {earnedBadges.length > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {earnedBadges.slice(0, 5).map((b) => (
+                    <span key={b.key} style={{ fontSize: '1rem' }}>{b.icon}</span>
+                  ))}
+                </div>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  {earnedBadges.length} získaných
+                </span>
+              </div>
+            ) : (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Zatím žádné — jdi cvičit!
+              </div>
+            )}
+          </div>
+          <ChevronRight size={18} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
         </div>
       </main>
     </div>

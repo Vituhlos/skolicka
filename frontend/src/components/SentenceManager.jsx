@@ -1,8 +1,52 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, Trash2, Upload, Download, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Upload, Download, AlertTriangle, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { api, BASE_API_URL } from '../utils/api.js'
 
 const LETTERS = ['B', 'L', 'M', 'P', 'S', 'V', 'Z']
+
+const WORD_LISTS = {
+  B: { y: 'bydlet, byt, být, bystrý, bylina, býk, příbytek, obyvatel, zabydlet, zbytečný', i: 'bitva, bič, biograf, biskvit' },
+  L: { y: 'lyže, lyžař, lykat, lýko, lýtko, lysý, mlýn, mlynář, plynout, plyn', i: 'líný, líbit, lípa, lístek, lítat, list, liška, lišit' },
+  M: { y: 'mýt, myslet, myš, mýdlo, mýval, zamyslet, umývat, mlýn', i: 'míč, mísa, mír, místo, milý, minuta, mistr, miska' },
+  P: { y: 'pyl, pysk, pytel, pýcha, pýr, pytlák, pyšný, opylovat', i: 'písek, píseň, píšťala, pilný, pirát, písmo, pilot' },
+  S: { y: 'syn, sýr, sypat, sychravý, sýček, syrový, sysel, sýkora, posypat', i: 'síla, síto, silný, sivý, sítě, síření' },
+  V: { y: 'vydat, vyhnat, vyjet, výr, výt, zvyk, jazyk, nazývat, výlet', i: 'vítr, víla, vír, víno, vítat, viset, vila, vína' },
+  Z: { y: 'zvyk, jazyk, brzy, nazývat, přezdívat, jazykový, jazykověda', i: 'zima, zítra, zívat, zisk, zinku, zívat, zimní' },
+}
+
+function buildPrompt(letter) {
+  const lists = WORD_LISTS[letter] || WORD_LISTS['B']
+  return `Generuješ věty pro českou výuku vyjmenovaných slov — cvičení y/i po písmenu ${letter}.
+
+Dítě vidí větu s mezerou a vybírá y nebo i. Musí použít pravidlo:
+"Po ${letter} píšu y jen u vyjmenovaných slov a jejich příbuzných."
+
+CHCI OBOJE — asi 60 % věty s y, 40 % věty s i:
+
+Věty s Y (vyjmenovaná/příbuzná slova):
+${lists.y}
+
+Věty s I (běžná česká slova po tomto písmenu, která NEJSOU vyjmenovaná):
+${lists.i}
+
+NECHCI:
+- cizí slova (pizza, video, bicykl, limit...)
+- věty testující koncovky sloves
+- slova která dítě 2.–4. třídy nezná
+
+Formát výstupu — pouze JSON pole, nic jiného:
+[
+  { "letter": "${letter}", "word": "příklad", "sentence": "Celá věta s normálně napsaným slovem." }
+]
+
+Pravidla:
+- "sentence" obsahuje větu s normálně napsaným y nebo i (bez mezer/teček navíc)
+- "word" je základní tvar slova
+- každé slovo nejvýše jednou
+- věty krátké, srozumitelné pro 2.–4. třídu ZŠ
+
+Vygeneruj 20 vět.`
+}
 
 // Find all words in the sentence that contain y/ý/i/í after the given letter
 function findCandidates(sentence, letter) {
@@ -73,6 +117,9 @@ export default function SentenceManager({ token }) {
   const [importResult, setImportResult] = useState(null)
   const [exportFormat, setExportFormat] = useState('json')
   const [deletingAll, setDeletingAll] = useState(false)
+  const [promptLetter, setPromptLetter] = useState('B')
+  const [promptOpen, setPromptOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const candidates = useMemo(() => findCandidates(sentence, letter), [sentence, letter])
 
@@ -186,6 +233,13 @@ export default function SentenceManager({ token }) {
     } finally {
       setDeletingAll(false)
     }
+  }
+
+  function handleCopyPrompt() {
+    navigator.clipboard.writeText(buildPrompt(promptLetter)).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   const filtered = filterLetter === 'vše' ? sentences : sentences.filter(s => s.letter === filterLetter)
@@ -313,13 +367,64 @@ export default function SentenceManager({ token }) {
           <Upload size={18} color="var(--color-primary)" />
           Hromadný import z ChatGPT
         </h2>
+
+        {/* Prompt helper */}
+        <div style={{ marginBottom: '16px', border: '2px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
+          <button
+            type="button"
+            onClick={() => setPromptOpen(o => !o)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', background: '#F8FAFC', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)',
+            }}
+          >
+            <span>💡 Zobrazit prompt pro ChatGPT</span>
+            {promptOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {promptOpen && (
+            <div style={{ padding: '14px', borderTop: '2px solid #E2E8F0', background: 'var(--color-surface)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                  Písmeno:
+                </span>
+                {LETTERS.map(l => (
+                  <button
+                    key={l} type="button"
+                    onClick={() => setPromptLetter(l)}
+                    style={{
+                      padding: '3px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem',
+                      border: `2px solid ${promptLetter === l ? 'var(--color-primary)' : '#CBD5E1'}`,
+                      background: promptLetter === l ? 'var(--color-primary)' : 'transparent',
+                      color: promptLetter === l ? 'white' : 'var(--color-text-muted)',
+                      fontFamily: 'var(--font-heading)', fontWeight: 700,
+                    }}
+                  >{l}</button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleCopyPrompt}
+                  className="btn-clay btn-clay-primary"
+                  style={{ marginLeft: 'auto', padding: '5px 14px', borderRadius: '10px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  {copied ? <><Check size={13} /> Zkopírováno!</> : <><Copy size={13} /> Kopírovat</>}
+                </button>
+              </div>
+              <pre style={{
+                background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '10px',
+                padding: '10px 14px', fontSize: '0.75rem', fontFamily: 'monospace',
+                color: 'var(--color-text)', overflowX: 'auto', margin: 0,
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '240px', overflowY: 'auto',
+              }}>
+                {buildPrompt(promptLetter)}
+              </pre>
+            </div>
+          )}
+        </div>
+
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: '12px' }}>
-          Požádej ChatGPT o JSON v tomto formátu a vlož ho sem:
+          Výstup z ChatGPT vlož sem (JSON pole):
         </p>
-        <pre style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '10px 14px', fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--color-text)', overflowX: 'auto', marginTop: 0, marginBottom: '12px' }}>{`[
-  { "letter": "B", "word": "být", "sentence": "Dnes jsem byl nemocný." },
-  { "letter": "B", "word": "bílý", "sentence": "Sníh je bílý." }
-]`}</pre>
         <textarea
           value={importText}
           onChange={e => { setImportText(e.target.value); setImportResult(null) }}

@@ -13,14 +13,34 @@ function makeWrongVariant(displayWord, correctAnswer) {
   return displayWord.replace('í', 'ý').replace('i', 'y')
 }
 
+// Ověřené školní seznamy (Wikipedia + vyjmenovana-slova.eu)
 const VYJMENOVANA_SLOVA = {
-  B: ['být', 'bydlit', 'obyvatel', 'příbytek', 'nábytek', 'dobytek', 'bystrý', 'bylina', 'kobyla', 'zbýt', 'zbylý'],
-  L: ['lysý', 'lýko', 'lyže', 'lyn', 'lýra', 'lyrika', 'lýtko', 'plynout', 'vzlykat', 'mlýn', 'blýskat'],
-  M: ['my', 'mýt', 'mýlit', 'mýval', 'myslit', 'myš', 'mýto', 'hmyz', 'nezmýlit', 'umýt', 'zamýšlet'],
-  P: ['pykat', 'pysk', 'pýcha', 'pyl', 'pýr', 'pytel', 'netopýr', 'slepýš', 'kopyto', 'krupýř', 'spytovat'],
-  S: ['syn', 'sýr', 'syrový', 'sychravý', 'sýkora', 'sýček', 'sysel', 'sypat', 'sytý', 'nasytit', 'usychat'],
-  V: ['vy', 'výt', 'výr', 'výše', 'vydat', 'zvyk', 'žvýkat', 'výskat', 'vývoj', 'výběr', 'výklad'],
-  Z: ['jazyk', 'nazývat', 'brzy', 'různý', 'zvykat', 'zýval', 'zývat'],
+  B: ['být', 'bydlit', 'byt', 'bystrý', 'bylina', 'kobyla', 'býk', 'obyvatel', 'příbytek', 'nábytek', 'dobytek', 'obyčej'],
+  L: ['slyšet', 'mlýn', 'blýskat', 'polykat', 'plynout', 'plýtvat', 'vzlykat', 'lysý', 'lýtko', 'lýko', 'lyže', 'pelyněk', 'plyš'],
+  M: ['my', 'mýt', 'mýlit', 'myslet', 'myš', 'mýtit', 'mýval', 'mykat', 'hmyz', 'hlemýžď', 'smýkat', 'chmýří'],
+  P: ['pýcha', 'pytel', 'pysk', 'netopýr', 'slepýš', 'pyl', 'kopyto', 'klopýtat', 'třpytit', 'zpytovat', 'pykat', 'pýr'],
+  S: ['syn', 'sytý', 'sýr', 'syrový', 'sychravý', 'sýkora', 'sýček', 'sysel', 'sypat', 'syčet'],
+  V: ['vy', 'výr', 'výt', 'vysoký', 'výskat', 'zvykat', 'žvýkat', 'vydra', 'vyžle', 'povyk', 'výheň'],
+  Z: ['jazyk', 'nazývat', 'brzy', 'zvyk'],
+}
+
+function getCategoryExplanation(category, letter, word, correctAnswer) {
+  const letterUp = (letter || '').toUpperCase()
+  const w = word || ''
+  if (category === 'vyjmenovane') {
+    return `📚 „${w}" je vyjmenované slovo po ${letterUp} → píšeme ${correctAnswer.toUpperCase()}`
+  }
+  if (category === 'pribuzne') {
+    return `🔗 „${w}" je příbuzné s vyjmenovaným slovem po ${letterUp} → píšeme ${correctAnswer.toUpperCase()}`
+  }
+  if (category === 'i_slovo') {
+    return `❌ „${w}" není vyjmenované slovo → píšeme ${correctAnswer.toUpperCase()}`
+  }
+  // fallback bez category
+  if (correctAnswer === 'y') {
+    return `📚 Toto slovo je vyjmenované nebo příbuzné → píšeme Y`
+  }
+  return `❌ Toto slovo není vyjmenované → píšeme I`
 }
 
 function renderSentenceWithBlank(template) {
@@ -544,26 +564,36 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
             }}
           >
             {answered.isCorrect ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)' }}>
-                <div
-                  className="checkmark-appear"
-                  style={{
-                    width: '36px', height: '36px',
-                    background: 'var(--color-success)',
-                    borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M4 10l4.5 4.5L16 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)' }}>
+                  <div
+                    className="checkmark-appear"
+                    style={{
+                      width: '36px', height: '36px',
+                      background: 'var(--color-success)',
+                      borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 10l4.5 4.5L16 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.1rem' }}>
+                    Správně! +{answered.xp_earned} XP
+                  </span>
                 </div>
-                <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.1rem' }}>
-                  Správně! +{answered.xp_earned} XP
-                </span>
+                <div style={{
+                  fontFamily: 'var(--font-body)', fontSize: '0.85rem',
+                  color: 'var(--color-success-dark)',
+                  background: '#F0FDF4', border: '1px solid #86EFAC',
+                  borderRadius: '10px', padding: '6px 14px', textAlign: 'center',
+                }}>
+                  {getCategoryExplanation(currentItem.category, currentItem.letter, currentItem.word, answered.correct_answer || currentItem.correct_answer)}
+                </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'var(--color-error)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--color-error)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
                     width: '36px', height: '36px',
@@ -581,12 +611,12 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
                 </div>
                 {answered.display_word && (
                   <div style={{
-                    marginTop: '10px',
                     background: '#DCFCE7',
                     border: '2px solid var(--color-success)',
                     borderRadius: '14px',
                     padding: '10px 20px',
                     boxShadow: '0 3px 0 var(--color-success-dark)',
+                    textAlign: 'center',
                   }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-success-dark)', marginBottom: '2px' }}>Správně je:</div>
                     <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.5rem', color: 'var(--color-success)' }}>
@@ -594,6 +624,14 @@ export default function FillInExercise({ profileId, onFinish, boss = false }) {
                     </div>
                   </div>
                 )}
+                <div style={{
+                  fontFamily: 'var(--font-body)', fontSize: '0.85rem',
+                  color: '#92400E',
+                  background: '#FEF3C7', border: '1px solid #FCD34D',
+                  borderRadius: '10px', padding: '6px 14px', textAlign: 'center',
+                }}>
+                  {getCategoryExplanation(currentItem.category, currentItem.letter, currentItem.word, currentItem.correct_answer)}
+                </div>
               </div>
             )}
           </div>

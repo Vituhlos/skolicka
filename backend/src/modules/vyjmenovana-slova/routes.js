@@ -140,8 +140,10 @@ router.post('/admin/sentences/bulk', requirePin, async (req, res) => {
   const pool = req.app.locals.pool;
   const results = { added: 0, skipped: 0, errors: [] };
 
+  const validCategories = ['vyjmenovane', 'pribuzne', 'i_slovo'];
+
   for (const item of sentences) {
-    const { letter, word, sentence } = item;
+    const { letter, word, sentence, category } = item;
     if (!letter || !word || !sentence) {
       results.errors.push(`Chybí pole: ${JSON.stringify(item)}`);
       continue;
@@ -151,13 +153,14 @@ router.post('/admin/sentences/bulk', requirePin, async (req, res) => {
       results.errors.push(`Nelze detekovat y/i pro: "${sentence}" (${letter})`);
       continue;
     }
+    const cat = validCategories.includes(category) ? category : null;
     try {
       await pool.query(`INSERT OR IGNORE INTO vslov_words (letter, word) VALUES (?, ?)`, [letter.toUpperCase(), word]);
       const wordResult = await pool.query(`SELECT id FROM vslov_words WHERE letter = ? AND word = ?`, [letter.toUpperCase(), word]);
       const wordId = wordResult.rows[0].id;
       const result = await pool.query(
-        `INSERT OR IGNORE INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty) VALUES (?, ?, ?, ?, 1)`,
-        [wordId, detected.template, detected.correct_answer, detected.display_word]
+        `INSERT OR IGNORE INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty, category) VALUES (?, ?, ?, ?, 1, ?)`,
+        [wordId, detected.template, detected.correct_answer, detected.display_word, cat]
       );
       if (result.rowCount > 0) results.added++;
       else results.skipped++;
@@ -284,7 +287,8 @@ router.post('/session/start', async (req, res) => {
             display_word: sentence.display_word,
             letter: sentence.letter,
             difficulty: sentence.difficulty,
-            word: sentence.word
+            word: sentence.word,
+            category: sentence.category || null,
           };
         });
     }

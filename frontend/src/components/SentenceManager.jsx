@@ -73,8 +73,13 @@ ${lists.zamenitelne ? `\n⚠️  NEJDŮLEŽITĚJŠÍ ZÁMĚNA: ${lists.zamenitel
 
 ━━━ FORMÁT — pouze JSON pole, nic jiného ━━━
 [
-  { "letter": "${letter}", "word": "příklad", "sentence": "Celá věta s normálně napsaným slovem." }
+  { "letter": "${letter}", "word": "příklad", "sentence": "Celá věta s normálně napsaným slovem.", "category": "vyjmenovane" }
 ]
+
+Hodnoty category:
+- "vyjmenovane" = slovo je přímo v seznamu vyjmenovaných slov
+- "pribuzne"    = slovo je příbuzné/odvozené od vyjmenovaného
+- "i_slovo"     = slovo není vyjmenované, píše se s i/í
 
 - "sentence" = věta s normálně napsaným y nebo i (bez mezer, bez teček navíc)
 - "word" = základní tvar slova (infinitiv / 1. pád)`

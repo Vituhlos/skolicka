@@ -7,6 +7,7 @@ import { migrate } from './db/migrations/001_init.js';
 import { migrate002 } from './db/migrations/002_vslov_sentences_unique.js';
 import { migrate003 } from './db/migrations/003_daily_goal.js';
 import { migrate004 } from './db/migrations/004_profile_details.js';
+import { migrate005 } from './db/migrations/005_sentence_category.js';
 import { runSeed } from './db/seed.js';
 import profilesRouter from './core/profiles.js';
 import authRouter from './core/auth.js';
@@ -46,6 +47,7 @@ async function main() {
   migrate002(db);
   migrate003(db);
   migrate004(db);
+  migrate005(db);
   console.log('Migrace dokončeny.');
 
   // 3. Create Express app

@@ -23,7 +23,8 @@ async function seed(pool) {
       template: item.template,
       correct_answer: item.correct_answer,
       display_word: item.display_word,
-      difficulty: item.difficulty
+      difficulty: item.difficulty,
+      category: item.category || null,
     });
   }
 
@@ -42,9 +43,9 @@ async function seed(pool) {
 
     for (const s of sentences) {
       const result = await pool.query(
-        `INSERT OR IGNORE INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty)
-         VALUES (?, ?, ?, ?, ?)`,
-        [wordId, s.template, s.correct_answer, s.display_word, s.difficulty]
+        `INSERT OR IGNORE INTO vslov_sentences (word_id, template, correct_answer, display_word, difficulty, category)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [wordId, s.template, s.correct_answer, s.display_word, s.difficulty, s.category]
       );
       if (result.rowCount > 0) added++;
     }

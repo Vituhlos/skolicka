@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   skolicka:
-    image: ghcr.io/Vituhlos/skolicka:latest  # nahraď Vituhlos svým GitHub username
+    image: ghcr.io/vituhlos/skolicka:latest
     ports:
       - "${PORT:-3000}:3000"
     environment:
@@ -11,4 +11,15 @@ services:
     volumes:
       - ${APPDATA_PATH:-/mnt/user/appdata/skolicka}/db:/data
       - ${APPDATA_PATH:-/mnt/user/appdata/skolicka}/uploads:/app/uploads
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.docker/config.json:/config.json:ro
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 300       # kontroluje každých 5 minut
+      WATCHTOWER_CLEANUP: "true"          # maže staré image po aktualizaci
+      WATCHTOWER_INCLUDE_STOPPED: "false"
     restart: unless-stopped

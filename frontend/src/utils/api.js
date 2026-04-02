@@ -66,6 +66,9 @@ export const api = {
   adminBulkImport: (sentences, token) => request('/api/modules/vyjmenovana-slova/admin/sentences/bulk', { method: 'POST', body: JSON.stringify({ sentences }), headers: { Authorization: `Bearer ${token}` } }),
   adminDeleteSentence: (id, token) => request(`/api/modules/vyjmenovana-slova/admin/sentences/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
   adminDeleteAllSentences: (token) => request(`/api/modules/vyjmenovana-slova/admin/sentences`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+
+  startNasobilkaSession: (profileId, tables) => request('/api/modules/nasobilka/session/start', { method: 'POST', body: JSON.stringify({ profile_id: profileId, tables }) }),
+  getNasobilkaTableProgress: (profileId) => request(`/api/modules/nasobilka/table-progress?profile_id=${profileId}`),
 }
 
 export { BASE_URL as BASE_API_URL }

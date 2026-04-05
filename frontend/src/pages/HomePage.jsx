@@ -40,6 +40,55 @@ function StatusNotice({ notice, onClose }) {
 }
 
 
+function WelcomeModal({ profile, onClose }) {
+  if (!profile) return null
+  return (
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{ zIndex: 1000 }}
+    >
+      <div
+        className="clay-card bounce-in"
+        style={{
+          maxWidth: '420px',
+          width: '90%',
+          padding: '40px 32px',
+          textAlign: 'center',
+          margin: 'auto',
+        }}
+      >
+        <div style={{ fontSize: '4rem', lineHeight: 1, marginBottom: '16px' }}>🎉</div>
+        <h2 style={{
+          fontFamily: 'var(--font-heading)',
+          fontWeight: 700,
+          fontSize: '1.8rem',
+          color: 'var(--color-text)',
+          margin: '0 0 12px',
+        }}>
+          Vítej, {profile.name}!
+        </h2>
+        <p style={{
+          fontFamily: 'var(--font-body)',
+          color: 'var(--color-text-muted)',
+          fontSize: '1rem',
+          lineHeight: 1.6,
+          margin: '0 0 28px',
+        }}>
+          Jsi připraven/a procvičovat? Vyber si modul a pojď na to!
+        </p>
+        <button
+          className="btn-clay btn-clay-primary"
+          style={{ padding: '12px 32px', borderRadius: '16px', fontSize: '1rem', fontFamily: 'var(--font-heading)', fontWeight: 700 }}
+          onClick={onClose}
+        >
+          Pojďme na to!
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const [profiles, setProfiles] = useState([])
@@ -53,6 +102,8 @@ export default function HomePage() {
   const [editingProfile, setEditingProfile] = useState(null)
   const [pendingManagedProfile, setPendingManagedProfile] = useState(null)
   const [token, setToken] = useState(() => localStorage.getItem('parent_token'))
+  const [welcomeProfile, setWelcomeProfile] = useState(null)
+  const [pendingNavigateProfileId, setPendingNavigateProfileId] = useState(null)
 
   const loadProfiles = async () => {
     try {
@@ -89,7 +140,20 @@ export default function HomePage() {
   const handleSelectProfile = (profile) => {
     if (profile.is_paused) return
     localStorage.setItem('current_profile_id', profile.id)
-    navigate(`/profil/${profile.id}`)
+    if ((profile.total_xp === 0 || !profile.total_xp) && !profile.last_active_date) {
+      setWelcomeProfile(profile)
+      setPendingNavigateProfileId(profile.id)
+    } else {
+      navigate(`/profil/${profile.id}`)
+    }
+  }
+
+  const handleWelcomeClose = () => {
+    setWelcomeProfile(null)
+    if (pendingNavigateProfileId) {
+      navigate(`/profil/${pendingNavigateProfileId}`)
+      setPendingNavigateProfileId(null)
+    }
   }
 
   const handleParentClick = () => {
@@ -365,6 +429,10 @@ export default function HomePage() {
           initialData={editingProfile}
           token={token}
         />
+      )}
+
+      {welcomeProfile && (
+        <WelcomeModal profile={welcomeProfile} onClose={handleWelcomeClose} />
       )}
     </div>
   )

@@ -50,7 +50,7 @@ router.get('/', optionalPin, async (req, res) => {
        LEFT JOIN xp_log x ON x.profile_id = p.id
        WHERE p.is_active = 1
        GROUP BY p.id
-       ORDER BY p.created_at ASC`
+       ORDER BY p.sort_order ASC, p.id ASC`
     );
 
     const profiles = await Promise.all(result.rows.map(async (p) => {
@@ -178,6 +178,15 @@ router.put('/:id', requirePin, async (req, res) => {
     if (is_paused !== undefined) {
       setClauses.push('is_paused = ?');
       values.push(is_paused ? 1 : 0);
+    }
+
+    const { sort_order } = req.body;
+    if (sort_order !== undefined) {
+      const order = parseInt(sort_order, 10);
+      if (!isNaN(order)) {
+        setClauses.push('sort_order = ?');
+        values.push(order);
+      }
     }
 
     if (setClauses.length === 0) {

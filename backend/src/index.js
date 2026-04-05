@@ -8,6 +8,7 @@ import { migrate002 } from './db/migrations/002_vslov_sentences_unique.js';
 import { migrate003 } from './db/migrations/003_daily_goal.js';
 import { migrate004 } from './db/migrations/004_profile_details.js';
 import { migrate005 } from './db/migrations/005_sentence_category.js';
+import { migrate006 } from './db/migrations/006_profile_sort_order.js';
 import { runSeed } from './db/seed.js';
 import profilesRouter from './core/profiles.js';
 import authRouter from './core/auth.js';
@@ -48,6 +49,7 @@ async function main() {
   migrate003(db);
   migrate004(db);
   migrate005(db);
+  migrate006(db);
   console.log('Migrace dokončeny.');
 
   // 3. Create Express app
@@ -86,6 +88,44 @@ async function main() {
   app.use('/api/profiles', profilesRouter);
   app.use('/api/streak', streakRouter);
   app.use('/api/badges', badgesRouter);
+
+  // GET /api/leaderboard
+  app.get('/api/leaderboard', async (req, res) => {
+    try {
+      const { getStreakCount } = await import('./core/streaks.js');
+
+      const profilesResult = await pool.query(
+        `SELECT p.id, p.name, p.avatar_preset,
+                COALESCE(SUM(x.amount), 0) as total_xp
+         FROM child_profiles p
+         LEFT JOIN xp_log x ON x.profile_id = p.id
+         WHERE p.is_active = 1 AND p.is_paused = 0
+         GROUP BY p.id
+         ORDER BY total_xp DESC`
+      );
+
+      const leaderboard = await Promise.all(profilesResult.rows.map(async (p) => {
+        const current_streak = await getStreakCount(pool, p.id);
+        const daysResult = await pool.query(
+          'SELECT COUNT(DISTINCT date) as days_practiced FROM streaks WHERE profile_id = ?',
+          [p.id]
+        );
+        return {
+          id: p.id,
+          name: p.name,
+          avatar_preset: p.avatar_preset,
+          total_xp: parseInt(p.total_xp, 10),
+          current_streak,
+          days_practiced: parseInt(daysResult.rows[0].days_practiced, 10),
+        };
+      }));
+
+      res.json(leaderboard);
+    } catch (err) {
+      console.error('leaderboard error:', err);
+      res.status(500).json({ error: 'Interní chyba serveru.' });
+    }
+  });
 
   // GET /api/health
   app.get('/api/health', (req, res) => {

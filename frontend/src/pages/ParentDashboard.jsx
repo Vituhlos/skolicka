@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowDownRight, ArrowUpRight, BookOpen, Calendar, ChevronLeft, Clock, Download, Flame, KeyRound,
-  ListPlus, Minus, Pencil, PauseCircle, Play, Plus, Target, Trash2, TrendingUp, Users, Zap,
+  ArrowDownRight, ArrowUpRight, BookOpen, Calendar, ChevronLeft, Clock, Download, Flame, GripVertical, KeyRound,
+  ListPlus, Minus, Pencil, PauseCircle, Play, Plus, Target, Trash2, TrendingUp, Trophy, Users, Zap,
 } from 'lucide-react'
 import SentenceManager from '../components/SentenceManager.jsx'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import ProfileForm from '../components/ProfileForm.jsx'
 import {
   Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -601,6 +604,115 @@ function ChangePinModal({ token, onClose }) {
   )
 }
 
+function SortableProfileItem({ profile, onEdit, onTogglePause, onDeleteConfirm, avatarUrl }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: profile.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : (profile.is_paused ? 0.75 : 1),
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="clay-card"
+      {...attributes}
+    >
+      <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        {/* Drag handle */}
+        <div
+          {...listeners}
+          style={{ cursor: 'grab', color: 'var(--color-text-muted)', flexShrink: 0, touchAction: 'none' }}
+          title="Přetáhnout"
+        >
+          <GripVertical size={20} />
+        </div>
+
+        {/* Avatar */}
+        <div style={{
+          width: '52px',
+          height: '52px',
+          borderRadius: '50%',
+          flexShrink: 0,
+          overflow: 'hidden',
+          border: `3px solid ${profile.color || 'var(--color-primary)'}`,
+          background: avatarUrl ? 'transparent' : (profile.avatar_preset ? `${profile.color || '#2563EB'}22` : profile.color || '#2563EB'),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: profile.avatar_preset ? '1.6rem' : '1.3rem',
+          fontFamily: 'var(--font-heading)',
+          fontWeight: 700,
+          color: '#fff',
+        }}>
+          {avatarUrl
+            ? <img src={avatarUrl} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : (profile.avatar_preset || (profile.name?.[0] || '?').toUpperCase())}
+        </div>
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: '140px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', margin: 0 }}>
+              {profile.name}
+            </h3>
+            {profile.is_paused && (
+              <span style={{
+                background: '#FEF3C7',
+                color: '#92400E',
+                border: '1px solid #D97706',
+                borderRadius: '8px',
+                padding: '1px 8px',
+                fontSize: '0.75rem',
+                fontFamily: 'var(--font-body)',
+                fontWeight: 700,
+              }}>
+                Pozastavený
+              </span>
+            )}
+          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+            {[
+              profile.school_class,
+              `Streak: ${profile.current_streak || 0} 🔥`,
+              profile.last_active_date && `Naposledy: ${new Date(profile.last_active_date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}`,
+            ].filter(Boolean).join(' · ')}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            className="btn-clay btn-clay-secondary"
+            style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+            onClick={() => onEdit(profile)}
+          >
+            <Pencil size={13} />
+            Upravit
+          </button>
+          <button
+            className="btn-clay btn-clay-secondary"
+            style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+            onClick={() => onTogglePause(profile)}
+          >
+            {profile.is_paused ? <Play size={13} /> : <PauseCircle size={13} />}
+            {profile.is_paused ? 'Obnovit' : 'Pozastavit'}
+          </button>
+          <button
+            className="btn-clay btn-clay-danger"
+            style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+            onClick={() => onDeleteConfirm(profile)}
+          >
+            <Trash2 size={13} />
+            Smazat
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ParentDashboard() {
   const navigate = useNavigate()
   const token = localStorage.getItem('parent_token')
@@ -633,6 +745,30 @@ export default function ParentDashboard() {
   const [profileNotice, setProfileNotice] = useState(null)
 
   const [changePinOpen, setChangePinOpen] = useState(false)
+
+  const [leaderboard, setLeaderboard] = useState([])
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState('')
+
+  const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = profiles.findIndex((p) => p.id === active.id)
+    const newIndex = profiles.findIndex((p) => p.id === over.id)
+    const reordered = arrayMove(profiles, oldIndex, newIndex)
+    setProfiles(reordered)
+
+    try {
+      await Promise.all(reordered.map((profile, index) =>
+        api.updateProfile(profile.id, { sort_order: index }, token)
+      ))
+    } catch {
+      // Reorder saved best-effort; reload on next visit.
+    }
+  }
 
   useEffect(() => {
     if (!token) {
@@ -672,6 +808,19 @@ export default function ParentDashboard() {
       setModules(data || [])
     } catch {
       // Dashboard works even without module labels.
+    }
+  }
+
+  const loadLeaderboard = async () => {
+    setLeaderboardLoading(true)
+    setLeaderboardError('')
+    try {
+      const data = await fetch(`${BASE_API_URL}/api/leaderboard`).then((r) => r.json())
+      setLeaderboard(Array.isArray(data) ? data : [])
+    } catch {
+      setLeaderboardError('Nepodařilo se načíst žebříček.')
+    } finally {
+      setLeaderboardLoading(false)
     }
   }
 
@@ -775,6 +924,64 @@ export default function ParentDashboard() {
     } finally {
       setExporting(false)
     }
+  }
+
+  const handleExportCSV = () => {
+    const profileName = profiles.find((p) => String(p.id) === selectedProfileId)?.name || 'profil'
+    const date = new Date().toISOString().slice(0, 10)
+    const rows = []
+
+    // Sekce: Přehled
+    rows.push(['## Přehled'])
+    rows.push(['Celkem XP', 'Streak (dny)', 'Dní procvičování', 'Celkem odpovědí', 'Správně', 'Úspěšnost (%)'])
+    if (stats) {
+      const acc = stats.total_answers > 0 ? ((stats.correct_answers / stats.total_answers) * 100).toFixed(1) : '0.0'
+      rows.push([stats.total_xp, stats.current_streak, stats.days_practiced, stats.total_answers, stats.correct_answers, acc])
+    }
+    rows.push([])
+
+    // Sekce: Časová osa (posledních 30 dní)
+    rows.push(['## Časová osa (posledních 30 dní)'])
+    rows.push(['Datum', 'XP', 'Odpovědí'])
+    for (const day of timeline) {
+      rows.push([day.date, day.xp_earned ?? 0, day.answer_count ?? 0])
+    }
+    rows.push([])
+
+    // Sekce: Statistiky podle modulu
+    rows.push(['## Statistiky podle modulu'])
+    rows.push(['Modul', 'Sezení', 'Celkem odpovědí', 'Správně', 'XP', 'Úspěšnost (%)'])
+    for (const m of moduleStats) {
+      const acc = m.total_answers > 0 ? ((m.correct_answers / m.total_answers) * 100).toFixed(1) : '0.0'
+      rows.push([m.module_id, m.session_count, m.total_answers, m.correct_answers, m.total_xp, acc])
+    }
+    rows.push([])
+
+    // Sekce: Poslední sezení
+    rows.push(['## Poslední sezení'])
+    rows.push(['Datum', 'Čas', 'Modul', 'Délka (min)', 'Celkem odpovědí', 'Správně', 'Úspěšnost (%)'])
+    for (const s of recentSessions) {
+      const dt = new Date(s.started_at)
+      const acc = s.total_answers > 0 ? ((s.correct_answers / s.total_answers) * 100).toFixed(1) : '0.0'
+      rows.push([
+        dt.toLocaleDateString('cs-CZ'),
+        dt.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' }),
+        s.module_id,
+        s.duration_minutes ?? 0,
+        s.total_answers,
+        s.correct_answers,
+        acc,
+      ])
+    }
+
+    const csv = rows.map((r) => r.map((v) => (String(v).includes(',') ? `"${String(v).replace(/"/g, '""')}"` : v)).join(',')).join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `skolnicka-${profileName}-${date}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleLogout = () => {
@@ -989,6 +1196,17 @@ export default function ParentDashboard() {
         </button>
 
         <button
+          onClick={handleExportCSV}
+          disabled={loading || !stats}
+          className="btn-clay btn-clay-secondary"
+          style={{ padding: '8px 16px', borderRadius: '14px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+          title="Stáhnout statistiky jako CSV"
+        >
+          <Download size={16} />
+          Export CSV
+        </button>
+
+        <button
           onClick={() => setChangePinOpen(true)}
           className="btn-clay btn-clay-secondary"
           style={{ padding: '8px 12px', borderRadius: '14px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}
@@ -1019,10 +1237,14 @@ export default function ParentDashboard() {
           { id: 'vyjmenovana', label: 'Vyjmenovaná slova', icon: BookOpen },
           { id: 'sentences', label: 'Správa vět', icon: ListPlus },
           { id: 'profiles', label: 'Profily', icon: Users },
+          { id: 'leaderboard', label: 'Žebříček', icon: Trophy },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setActiveView(id)}
+            onClick={() => {
+              setActiveView(id)
+              if (id === 'leaderboard') loadLeaderboard()
+            }}
             style={{
               padding: '12px 18px',
               background: 'none',
@@ -1407,6 +1629,108 @@ export default function ParentDashboard() {
             )}
           </>
         )}
+        {activeView === 'leaderboard' && (
+          <div>
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-text)', margin: '0 0 4px' }}>
+                Žebříček profilů
+              </h2>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                Aktivní profily seřazené podle nasbíraných XP.
+              </p>
+            </div>
+
+            {leaderboardLoading && (
+              <div style={{ textAlign: 'center', padding: '48px' }}>
+                <div style={{
+                  width: '36px', height: '36px',
+                  border: '3px solid var(--color-border-light)',
+                  borderTop: '3px solid var(--color-primary)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 12px',
+                }} />
+                <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)' }}>Načítám žebříček…</p>
+              </div>
+            )}
+
+            {leaderboardError && (
+              <div style={{
+                background: '#FEE2E2', border: '2px solid var(--color-error)',
+                borderRadius: '14px', padding: '12px 16px',
+                color: 'var(--color-error)', fontFamily: 'var(--font-body)',
+              }}>
+                {leaderboardError}
+              </div>
+            )}
+
+            {!leaderboardLoading && !leaderboardError && leaderboard.length === 0 && (
+              <div className="clay-card" style={{ padding: '48px', textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)' }}>
+                  Zatím žádné aktivní profily v žebříčku.
+                </p>
+              </div>
+            )}
+
+            {!leaderboardLoading && !leaderboardError && leaderboard.length > 0 && (
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {leaderboard.map((entry, index) => {
+                  const medals = ['🥇', '🥈', '🥉']
+                  const rank = index < 3 ? medals[index] : `#${index + 1}`
+                  const avatar = entry.avatar_preset || '👤'
+                  return (
+                    <div
+                      key={entry.id}
+                      className="clay-card"
+                      style={{
+                        padding: '14px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        background: index === 0 ? '#FFFBEB' : 'var(--color-surface)',
+                        borderColor: index === 0 ? '#F59E0B' : undefined,
+                        boxShadow: index === 0 ? '0 4px 0 #F59E0B88, 0 8px 20px rgba(0,0,0,0.06)' : undefined,
+                      }}
+                    >
+                      <div style={{
+                        fontFamily: 'var(--font-heading)',
+                        fontWeight: 700,
+                        fontSize: index < 3 ? '1.6rem' : '1.1rem',
+                        minWidth: '40px',
+                        textAlign: 'center',
+                        color: index < 3 ? undefined : 'var(--color-text-muted)',
+                      }}>
+                        {rank}
+                      </div>
+                      <div style={{ fontSize: '1.8rem', lineHeight: 1 }}>{avatar}</div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', margin: '0 0 2px' }}>
+                          {entry.name}
+                        </p>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                          Streak: {entry.current_streak} 🔥 · Dny: {entry.days_practiced}
+                        </p>
+                      </div>
+                      <div style={{
+                        fontFamily: 'var(--font-heading)',
+                        fontWeight: 700,
+                        fontSize: '1.1rem',
+                        color: '#F97316',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}>
+                        <Zap size={16} color="#F97316" />
+                        {entry.total_xp} XP
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeView === 'profiles' && (
           <div>
             {/* Header */}
@@ -1468,105 +1792,25 @@ export default function ParentDashboard() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: '12px' }}>
-                {profiles.map((profile) => {
-                  const avatarUrl = profile.avatar_url ? `${BASE_API_URL}${profile.avatar_url}` : null
-                  return (
-                    <div
-                      key={profile.id}
-                      className="clay-card"
-                      style={{
-                        padding: '16px 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        flexWrap: 'wrap',
-                        opacity: profile.is_paused ? 0.75 : 1,
-                      }}
-                    >
-                      {/* Avatar */}
-                      <div style={{
-                        width: '52px',
-                        height: '52px',
-                        borderRadius: '50%',
-                        flexShrink: 0,
-                        overflow: 'hidden',
-                        border: `3px solid ${profile.color || 'var(--color-primary)'}`,
-                        background: avatarUrl ? 'transparent' : (profile.avatar_preset ? `${profile.color || '#2563EB'}22` : profile.color || '#2563EB'),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: profile.avatar_preset ? '1.6rem' : '1.3rem',
-                        fontFamily: 'var(--font-heading)',
-                        fontWeight: 700,
-                        color: '#fff',
-                      }}>
-                        {avatarUrl
-                          ? <img src={avatarUrl} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : (profile.avatar_preset || (profile.name?.[0] || '?').toUpperCase())}
-                      </div>
-
-                      {/* Info */}
-                      <div style={{ flex: 1, minWidth: '140px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <h3 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', margin: 0 }}>
-                            {profile.name}
-                          </h3>
-                          {profile.is_paused && (
-                            <span style={{
-                              background: '#FEF3C7',
-                              color: '#92400E',
-                              border: '1px solid #D97706',
-                              borderRadius: '8px',
-                              padding: '1px 8px',
-                              fontSize: '0.75rem',
-                              fontFamily: 'var(--font-body)',
-                              fontWeight: 700,
-                            }}>
-                              Pozastavený
-                            </span>
-                          )}
-                        </div>
-                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-                          {[
-                            profile.school_class,
-                            `Streak: ${profile.current_streak || 0} 🔥`,
-                            profile.last_active_date && `Naposledy: ${new Date(profile.last_active_date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}`,
-                          ].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-
-                      {/* Actions */}
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button
-                          className="btn-clay btn-clay-secondary"
-                          style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
-                          onClick={() => { setEditingProfile(profile); setProfileFormOpen(true) }}
-                        >
-                          <Pencil size={13} />
-                          Upravit
-                        </button>
-                        <button
-                          className="btn-clay btn-clay-secondary"
-                          style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
-                          onClick={() => handleTogglePauseProfile(profile)}
-                        >
-                          {profile.is_paused ? <Play size={13} /> : <PauseCircle size={13} />}
-                          {profile.is_paused ? 'Obnovit' : 'Pozastavit'}
-                        </button>
-                        <button
-                          className="btn-clay btn-clay-danger"
-                          style={{ padding: '7px 14px', borderRadius: '12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
-                          onClick={() => setDeleteConfirm(profile)}
-                        >
-                          <Trash2 size={13} />
-                          Smazat
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={profiles.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    {profiles.map((profile) => {
+                      const avatarUrl = profile.avatar_url ? `${BASE_API_URL}${profile.avatar_url}` : null
+                      return (
+                        <SortableProfileItem
+                          key={profile.id}
+                          profile={profile}
+                          avatarUrl={avatarUrl}
+                          onEdit={(p) => { setEditingProfile(p); setProfileFormOpen(true) }}
+                          onTogglePause={handleTogglePauseProfile}
+                          onDeleteConfirm={setDeleteConfirm}
+                        />
+                      )
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         )}
